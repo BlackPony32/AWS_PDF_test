@@ -1,0 +1,14 @@
+version: '3.10'
+services:
+  fastapi-app:
+    build: .
+    command: sh -c "uvicorn main:app --port=8000 --host=0.0.0.0"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./static:/app/static
+      - ./temp:/app/temp
+    env_file:
+      - .env
+    restart: always  # Automatically restart the container if it stops

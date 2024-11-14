@@ -1,0 +1,1 @@
+If the error occurs with other visualizations, try starting the process again. If it doesn't work, there may be a problem with the data.

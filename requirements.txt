@@ -1,0 +1,17 @@
+fpdf2
+fastapi
+docker
+markdown2
+plotly
+langchain-openai==0.1.24
+langchain-community==0.2.17
+langchain-cohere==0.1.9
+langchain==0.2.16
+xlrd
+pandas
+uvicorn
+numpy
+aiofiles
+crewai
+crewai_tools
+python-multipart
