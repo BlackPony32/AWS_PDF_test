@@ -15,5 +15,3 @@ aiofiles
 crewai
 crewai_tools
 python-multipart
-flask
-requests  # if Flask needs to communicate with FastAPI

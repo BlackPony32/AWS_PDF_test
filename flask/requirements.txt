@@ -1,0 +1,8 @@
+xlrd
+pandas
+uvicorn
+numpy
+aiofiles
+python-multipart
+flask
+requests  # if Flask needs to communicate with FastAPI

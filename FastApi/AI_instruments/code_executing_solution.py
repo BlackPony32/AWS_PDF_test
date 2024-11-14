@@ -11,8 +11,8 @@ def extract_and_execute_code(file_path, user_folder):
     Extracts Python code blocks from a file and executes them.
     :param file_path: Path to the text file containing Python code blocks.
     """
-    plots_FOLDER = f'src/plots/{user_folder}'
-    summary_FOLDER = f'src/summary/{user_folder}'
+    plots_FOLDER = f'FastApi/src/plots/{user_folder}'
+    summary_FOLDER = f'FastApi/src/summary/{user_folder}'
     if not os.path.exists(plots_FOLDER):
         os.makedirs(plots_FOLDER)
     if not os.path.exists(summary_FOLDER):
@@ -26,7 +26,7 @@ def extract_and_execute_code(file_path, user_folder):
     "        encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']",
     "        for encoding in encodings:",
     "            try:",
-    f"                df = pd.read_csv('src\\\\uploads\\\\{user_folder}\\\\cleaned_data.csv', encoding=encoding, low_memory=False)",
+    f"                df = pd.read_csv('FastApi\\src\\\\uploads\\\\{user_folder}\\\\cleaned_data.csv', encoding=encoding, low_memory=False)",
     "                break  # Exit loop once successful",
     "            except UnicodeDecodeError:",
     "                print(f\"Failed to decode with: {encoding}\")",
@@ -72,7 +72,7 @@ def extract_and_execute_code(file_path, user_folder):
                for encoding in encodings:
                    try:
                        #global df
-                       df = pd.read_csv(f'src\\uploads\\{user_folder}\\cleaned_data.csv', encoding=encoding,engine='python')
+                       df = pd.read_csv(f'FastApi\\src\\uploads\\{user_folder}\\cleaned_data.csv', encoding=encoding,engine='python')
                    except UnicodeDecodeError:
                        print(f"Failed decode with: {encoding}")
            except Exception as e:

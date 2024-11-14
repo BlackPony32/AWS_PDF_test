@@ -38,5 +38,5 @@ def final_gen(file_path):
     agent_answer = final_agent_gen(file_path) 
     final_answer = agent_answer.get("output")
 
-    with open('src/final_gen.txt', 'w') as file:
+    with open('FastApi/src/final_gen.txt', 'w') as file:
         file.write(final_answer)

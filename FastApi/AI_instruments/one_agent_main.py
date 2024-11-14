@@ -96,7 +96,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
                                     fig.update_traces(marker=dict(colors=px.colors.qualitative.Light24))
                                     fig.update_layout(title='Top 15 Products by Quantity Sold')
 
-                                    plots_dir = 'src/plots/68cd4df2-a031-11ef-9654-70665514def7'
+                                    plots_dir = 'FastApi/src/plots/68cd4df2-a031-11ef-9654-70665514def7'
                                     os.makedirs(plots_dir, exist_ok=True)
                                     fig.write_image(f'{plots_dir}/chart_2.png')
 
@@ -107,7 +107,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
                                         "By recognizing trends in product sales, the company can adjust its procurement strategies and optimize its supply chain operations effectively."
                                     )
 
-                                    sum_dir = 'src/summary/68cd4df2-a031-11ef-9654-70665514def7'
+                                    sum_dir = 'FastApi/src/summary/68cd4df2-a031-11ef-9654-70665514def7'
                                     os.makedirs(sum_dir, exist_ok=True)
                                     with open(f'{sum_dir}/sum_2.txt', 'w') as f:
                                         f.write(summary)
@@ -146,9 +146,9 @@ def AI_generation_plots_summary(_data_dict, user_folder):
 
     
     data_config ={
-        'plots_dir': f"src/plots/{user_folder}",
-        'sum_dir': f"src/summary/{user_folder}",
-        'data_path': f'src/uploads/{user_folder}/cleaned_data.csv',
+        'plots_dir': f"FastApi/src/plots/{user_folder}",
+        'sum_dir': f"FastApi/src/summary/{user_folder}",
+        'data_path': f'FastApi/src/uploads/{user_folder}/cleaned_data.csv',
         'tasks_for_data_num' : 5,
         'head': str(head),  # First 5 rows of the dataframe as a dictionary
         'describe':str(describe),  # Descriptive statistics of all columns
@@ -159,7 +159,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
 
     }
 
-    crew1.kickoff(inputs=data_config)
+    crew1.kickoff(inputs=data_config) 
 
     code_executing_solution.extract_and_execute_code("Summary.txt", user_folder)
     return "Everything is ok"

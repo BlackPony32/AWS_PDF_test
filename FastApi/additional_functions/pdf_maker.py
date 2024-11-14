@@ -78,11 +78,11 @@ def find_bold(pdf, file_path):
             
 def generate_pdf(original_filename, user_folder):
     # Define folder paths
-    UPLOAD_FOLDER = f'src/uploads/{user_folder}'
-    PDF_FOLDER = f'src/pdfs/{user_folder}'
-    PLOTS_FOLDER = f'src/plots/{user_folder}'
-    SUMMARY_FOLDER = f'src/summary/{user_folder}'
-    LOGO_PATH = 'src/icon.ico'
+    UPLOAD_FOLDER = f'FastApi/src/uploads/{user_folder}'
+    PDF_FOLDER = f'FastApi/src/pdfs/{user_folder}'
+    PLOTS_FOLDER = f'FastApi/src/plots/{user_folder}'
+    SUMMARY_FOLDER = f'FastApi/src/summary/{user_folder}'
+    LOGO_PATH = 'FastApi/src/icon.ico'
 
     for folder in [UPLOAD_FOLDER, PDF_FOLDER, PLOTS_FOLDER, SUMMARY_FOLDER]:
         if not os.path.exists(folder):
@@ -117,8 +117,8 @@ def generate_pdf(original_filename, user_folder):
     for i in range(1, 6):
         plot_image_path = os.path.join(PLOTS_FOLDER, f"chart_{i}.png")
         text_file_path = os.path.join(SUMMARY_FOLDER, f"sum_{i}.txt")
-        extra_plot_path = os.path.join('src/extra_plots.png')
-        extra_text_path = os.path.join('src/extra_sum.txt')
+        extra_plot_path = os.path.join('FastApi/src/extra_plots.png')
+        extra_text_path = os.path.join('FastApi/src/extra_sum.txt')
 
         try:
             image_width = 180
@@ -152,8 +152,8 @@ def generate_pdf(original_filename, user_folder):
             pdf.ln(25)  # Add line break
 
     pdf.add_page()  # Ensure there's a new page for the final section
-    primary_file_path = "src/final_gen.txt"
-    fallback_file_path = "src/extra_final.txt"
+    primary_file_path = "FastApi/src/final_gen.txt"
+    fallback_file_path = "FastApi/src/extra_final.txt"
     if os.path.exists(primary_file_path):
         find_bold(pdf, primary_file_path)
     else:

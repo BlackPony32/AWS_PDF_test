@@ -64,7 +64,7 @@ def preprocess_data(file_path, user_folder):
             actions_performed.append(f"Removed duplicate columns. Columns reduced from {len(original_columns)} to {len(df.columns)}")
 
         # Save the cleaned data to a new CSV file
-        cleaned_file_path = f'src/uploads/{user_folder}/cleaned_data.csv'
+        cleaned_file_path = f'FastApi/src/uploads/{user_folder}/cleaned_data.csv'
         df.to_csv(cleaned_file_path, index=False)
         actions_performed.append(f"Saved cleaned data to {cleaned_file_path}")
 
