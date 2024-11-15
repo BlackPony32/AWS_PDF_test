@@ -1,10 +1,14 @@
 from flask import Flask, render_template, request, jsonify, send_file, session
 import requests
 from io import BytesIO
+from waitress import serve
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Set a secret key for session management
-fastapi_url = "http://0.0.0.0:8000"  # FastAPI server URL
+fastapi_url = os.getenv('FASTAPI_URL')  # FastAPI server URL
 
 @app.route('/')
 def index():
@@ -15,7 +19,7 @@ def upload_file():
     file = request.files['file']
     if file and (file.filename.endswith('.csv') or file.filename.endswith(('.xlsx', '.xls'))):
         response = requests.post(
-            f"{fastapi_url}/src/upload",
+            "http://127.0.0.1:8000/src/upload",
             files={'file': (file.filename, file, file.content_type)}
         )
         if response.status_code == 200:
@@ -51,5 +55,7 @@ def download_pdf():
     
     return "Failed to download PDF", 404
 
-if __name__ == '__main__':
-    app.run(port=5000)
+
+if __name__ == "__main__":
+    # Run Waitress in production
+    serve(app, host="0.0.0.0", port=5000)

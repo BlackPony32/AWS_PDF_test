@@ -9,7 +9,8 @@ import os
 import logging
 import asyncio
 import aiofiles
-from FastApi.additional_functions.pdf_maker import generate_pdf
+#from FastApi.additional_functions.pdf_maker import generate_pdf
+from FastApi.additional_functions.pdf_maker import PDF
 from FastApi.additional_functions.preprocess_data import preprocess_data
 from FastApi.AI_instruments.one_agent_main import AI_generation_plots_summary
 from FastApi.AI_instruments.final_sum import final_gen
@@ -116,13 +117,20 @@ async def upload_file(file: UploadFile = File(...)):
         _df = await asyncio.to_thread(pd.read_csv, cleaned_dataset_name, low_memory=False)
         data_dict = await asyncio.to_thread(extract_main_info, _df)
 
-        await asyncio.to_thread(AI_generation_plots_summary, data_dict, user_folder)
-        logger.info("Plot generation completed")
-
-        await asyncio.to_thread(final_gen, f"FastApi/src/uploads/{user_folder}/{filename}")
-        logger.info("Data summary generated")
-
-        pdf_path = await asyncio.to_thread(generate_pdf, filename, user_folder)
+        try:
+            await asyncio.to_thread(AI_generation_plots_summary, data_dict, user_folder)
+            logger.info("Plot generation completed")
+        except Exception as e:
+            logger.error(f"Plot generation error: {e}")
+        
+        try:
+            await asyncio.to_thread(final_gen, f"FastApi/src/uploads/{user_folder}/{filename}")
+            logger.info("Data summary generated")
+        except Exception as e:
+            logger.error(f"Data summary generation error: {e}")
+        
+        pdf = PDF(formated_file_name=filename, user_folder=user_folder)
+        pdf_path = await asyncio.to_thread(pdf.create_pdf) 
         logger.info(f"Generated PDF at {pdf_path}")
 
         pdf_url = f"/download/{user_folder}/{os.path.basename(pdf_path)}"

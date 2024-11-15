@@ -5,4 +5,7 @@ numpy
 aiofiles
 python-multipart
 flask
+waitress
+kaleido
+python-dotenv
 requests  # if Flask needs to communicate with FastAPI

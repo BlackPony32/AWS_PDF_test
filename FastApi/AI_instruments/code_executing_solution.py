@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import os
+import kaleido
 # Ensure folders exist
 
     
@@ -26,7 +27,7 @@ def extract_and_execute_code(file_path, user_folder):
     "        encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']",
     "        for encoding in encodings:",
     "            try:",
-    f"                df = pd.read_csv('FastApi\\src\\\\uploads\\\\{user_folder}\\\\cleaned_data.csv', encoding=encoding, low_memory=False)",
+    f"                df = pd.read_csv(f'FastApi/src/uploads/{user_folder}/cleaned_data.csv', encoding=encoding, low_memory=False)",
     "                break  # Exit loop once successful",
     "            except UnicodeDecodeError:",
     "                print(f\"Failed to decode with: {encoding}\")",
@@ -39,7 +40,12 @@ def extract_and_execute_code(file_path, user_folder):
     "        print(f\"Error while reading file: {e}\")",
     "        return None  # Return None if there was another error outside of decoding",
     "",
-    "df = df_func()"
+    "df = df_func()",
+    "if df is None:",
+    "    try:",
+    "        df = pd.read_csv(f'FastApi/src/uploads/{user_folder}/cleaned_data.csv')",
+    "    except Exception as e:",
+    "        print(f\"Error while reading file 2: {e}\")"
 ]
     except Exception as e:
         pass
@@ -64,20 +70,20 @@ def extract_and_execute_code(file_path, user_folder):
         # Regex pattern to extract code blocks between ```python and ```
         code_blocks = re.findall(r'```python(.*?)```', content, re.DOTALL)
 
-        # For each extracted code block, execute it
+        ## For each extracted code block, execute it
         for i, code_block in enumerate(code_blocks, start=1):
            print(f"Executing code block {i}...\n")
-           try:
-               encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']  # список можливих енкодингів
-               for encoding in encodings:
-                   try:
-                       #global df
-                       df = pd.read_csv(f'FastApi\\src\\uploads\\{user_folder}\\cleaned_data.csv', encoding=encoding,engine='python')
-                   except UnicodeDecodeError:
-                       print(f"Failed decode with: {encoding}")
-           except Exception as e:
-               print(e)
-           #print(df.head())
+        #   try:
+        #       encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']  # список можливих енкодингів
+        #       for encoding in encodings:
+        #           try:
+        #               #global df
+        #               df = pd.read_csv(f'FastApi\\src\\uploads\\{user_folder}\\cleaned_data.csv', encoding=encoding,engine='python')
+        #           except UnicodeDecodeError:
+        #               print(f"Failed decode with: {encoding}")
+        #   except Exception as e:
+        #       print(e)
+        #   #print(df.head())
            exec(code_block)
            print(f"Code block {i} executed successfully!\n")
     except Exception as e:

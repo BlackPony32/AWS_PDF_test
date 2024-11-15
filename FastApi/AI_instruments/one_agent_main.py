@@ -11,8 +11,8 @@ from crewai_tools import CSVSearchTool
 import asyncio
 
 def AI_generation_plots_summary(_data_dict, user_folder):
-    plots_FOLDER = f'src/plots/{user_folder}'
-    summary_FOLDER = f'src/summary/{user_folder}'
+    plots_FOLDER = f'FastApi/src/plots/{user_folder}'
+    summary_FOLDER = f'FastApi/src/summary/{user_folder}'
 
     # Ensure folders exist
     if not os.path.exists(plots_FOLDER):
@@ -66,12 +66,16 @@ def AI_generation_plots_summary(_data_dict, user_folder):
 
                         Write code using Plotly GO, each in a standalone function named as task_n_visualization(df).
                         Each function should:
-                        -Create an informative visualization, but each visualization style should be unique (e.g., bar graph, etc.).
-                        -solid light gray background without grid lines (xaxis_showgrid=False, yaxis_showgrid=False)
+                        -Create an informative visualization, and each visualization style can use only one time (e.g.,one bar graph,one line etc.).
+                        -solid #F5F5F5 background without grid lines (xaxis_showgrid=False, yaxis_showgrid=False)
                         -Include a summary (1500+ characters) explaining the visual insights and relevant business observations.
-                        -Show only top 15 data points, grouping others under 'other.'
+                        Summary should teach how to read visualization + answer on these qustions:
+                        1. What patterns or trends can be observed in the data?
+                        2. Are there any outliers or unexpected values?
+                        3. What factors might explain the main differences in the data?
+                        -Show only top 15 data values if it many
                         -Use unique colors for each chart, such as Light24.
-                        -Use fig.add_trace() to combine graphs if needed.
+                        -Use fig.add_trace() to combine graphs if needed. (like bar sales and line data dependency for example)
                         -Save visualizations as PNG files in {plots_dir} (e.g., chart_n.png).
                         -Save each summary in {sum_dir} (e.g., sum_n.txt).
                         Coding Standards
@@ -101,10 +105,10 @@ def AI_generation_plots_summary(_data_dict, user_folder):
                                     fig.write_image(f'{plots_dir}/chart_2.png')
 
                                     summary = (
-                                        "This donut chart illustrates the top 15 products by the quantity sold. "
-                                        "Such a visualization is crucial for identifying which products are in high demand. "
-                                        "It helps the business in inventory management and resource allocation, ensuring that the most popular products are always in stock. "
-                                        "By recognizing trends in product sales, the company can adjust its procurement strategies and optimize its supply chain operations effectively."
+                                        "To read this chart, focus on the x-axis (City) and y-axis (Total Sales in $). Each bar’s height shows the sales volume for a city — taller bars mean higher sales. "
+                                        "1. Patterns or Trends: New York and Brooklyn have notably higher sales, with a sharp decline in other cities."
+                                        "2. Outliers: New York stands out as an outlier, with significantly more sales than the others."
+                                        "3. Explaining Differences: Larger cities may drive higher sales due to population size, economic factors, or targeted marketing strategies."
                                     )
 
                                     sum_dir = 'FastApi/src/summary/68cd4df2-a031-11ef-9654-70665514def7'
