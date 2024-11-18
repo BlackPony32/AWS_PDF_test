@@ -21,31 +21,37 @@ def extract_and_execute_code(file_path, user_folder):
     
     try:
         new_lines = [
-    "def df_func():",
+    f"user_folder = '{user_folder}'",
+    f"plots_dir = f'FastApi/src/plots/{user_folder}'",
+    f"sum_dir = f'FastApi/src/summary/{user_folder}'",
+    "def df_func(user_folder):",
     "    df = None  # Initialize df to None to avoid UnboundLocalError",
     "    try:",
     "        encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']",
     "        for encoding in encodings:",
     "            try:",
-    f"                df = pd.read_csv(f'FastApi/src/uploads/{user_folder}/cleaned_data.csv', encoding=encoding, low_memory=False)",
+    "                df = pd.read_csv(f'FastApi/src/uploads/{user_folder}/cleaned_data.csv', encoding=encoding, low_memory=False)",
     "                break  # Exit loop once successful",
     "            except UnicodeDecodeError:",
-    "                print(f\"Failed to decode with: {encoding}\")",
+    "                raise Exception(f\"Failed to decode with: {encoding}\")",
+    "        #print(df.head())",
     "        ",
     "        if df is None:",
     "            print(\"Failed to read the file with any encoding.\")",
     "        return df  # Will return None if no encoding works",
     "",
     "    except Exception as e:",
-    "        print(f\"Error while reading file: {e}\")",
+    "        raise Exception(f\"Error while reading file: {e}\")",
     "        return None  # Return None if there was another error outside of decoding",
     "",
-    "df = df_func()",
+    "df = df_func(user_folder)",
     "if df is None:",
     "    try:",
-    "        df = pd.read_csv(f'FastApi/src/uploads/{user_folder}/cleaned_data.csv')",
+    "        df = pd.read_csv(f'FastApi/src/uploads/{user_folder}/cleaned_data.csv', low_memory=False)",
+    "        #print(df.head())",
     "    except Exception as e:",
-    "        print(f\"Error while reading file 2: {e}\")"
+    "        raise Exception(f\"Error while reading file 2: {e}\")",
+    "print(df.head)"
 ]
     except Exception as e:
         pass

@@ -85,42 +85,63 @@ def AI_generation_plots_summary(_data_dict, user_folder):
                         -Avoid using global variables and written functions for loading datasets.
                         -Optimize visualizations for high-quality output and readability.
                         -You are writing a part of the code, so know that df has already been declared. do not overwrite it.
-                        Code Example
+                        and do not write any variable df ! only import lib, functions and call them
+                        Code Example you should follow
                         A good code structure for one function:
 
                         import plotly.graph_objects as go
                         import plotly.express as px  # Import plotly.express for colors
 
-                        def task_2_visualization(df):
+                        def task_1_visualization(df, sum_dir, plots_dir):
                             try:
-                                if 'Item #' in df.columns and 'Qty' in df.columns:
-                                    # Task 2: Top 15 Products by Quantity Sold
-                                    product_sales = df.groupby('Item #')['Qty'].count().nlargest(15)
-                                    fig = go.Figure(data=[go.Pie(labels=product_sales.index, values=product_sales.values, hole=0.3)])
-                                    fig.update_traces(marker=dict(colors=px.colors.qualitative.Light24))
-                                    fig.update_layout(title='Top 15 Products by Quantity Sold')
+                                if df is None:
+                                    raise ValueError("Input DataFrame `df` is None. Please provide a valid DataFrame.")
 
-                                    plots_dir = 'FastApi/src/plots/68cd4df2-a031-11ef-9654-70665514def7'
+                                if 'Total Sales $' in df.columns and 'DocDate' in df.columns:
+                                    # Task 1: Time Series Analysis of Total Sales
+                                    sales_over_time = df.groupby('DocDate')['Total Sales $'].sum().reset_index()
+                                    fig = go.Figure()
+                                    fig.add_trace(go.Scatter(x=sales_over_time['DocDate'], y=sales_over_time['Total Sales $'],
+                                                              mode='lines+markers', name='Total Sales',
+                                                              line=dict(color=px.colors.qualitative.Light24[0])))
+                                    fig.update_layout(title='Total Sales Over Time',
+                                                      xaxis_title='Date',
+                                                      yaxis_title='Total Sales ($)',
+                                                      plot_bgcolor='rgba(245, 245, 245, 1)',
+                                                      xaxis_showgrid=False,
+                                                      yaxis_showgrid=False)
+
+                                    plots_dir = '{plots_dir}'
+                                    if plots_dir is None:
+                                        raise ValueError("`plots_dir` is None. Please provide a valid directory path.")
+            
                                     os.makedirs(plots_dir, exist_ok=True)
-                                    fig.write_image(f'{plots_dir}/chart_2.png')
+                                    fig.write_image(f'{plots_dir}/chart_1.png')
 
-                                    summary = (
-                                        "To read this chart, focus on the x-axis (City) and y-axis (Total Sales in $). Each bar’s height shows the sales volume for a city — taller bars mean higher sales. "
-                                        "1. Patterns or Trends: New York and Brooklyn have notably higher sales, with a sharp decline in other cities."
-                                        "2. Outliers: New York stands out as an outlier, with significantly more sales than the others."
-                                        "3. Explaining Differences: Larger cities may drive higher sales due to population size, economic factors, or targeted marketing strategies."
+                                    summary = ('''
+                                        This visualization analyzes the total sales over time, plotted as a time series. "
+                                        1. Patterns or Trends: The graph indicates fluctuations in total sales, with peaks and troughs corresponding to specific dates. A consistent increase indicates growing sales, while significant decreases might signify seasonal trends or external factors affecting sales performance.
+                                        2. Outliers: Any unusually high peaks in the graph signal exceptional sales days, perhaps owing to promotions or new product launches, while unexpected dips may warrant further investigation.
+                                        3. Explaining Differences: Various factors may contribute to these fluctuations, including marketing campaigns, holidays, or changes in consumer behavior. Identifying the reasons behind these trends can help in strategic planning.
+                                        '''
                                     )
 
-                                    sum_dir = 'FastApi/src/summary/68cd4df2-a031-11ef-9654-70665514def7'
+                                    sum_dir = '{sum_dir}'
+                                    if sum_dir is None:
+                                        raise ValueError("`sum_dir` is None. Please provide a valid directory path.")
+            
                                     os.makedirs(sum_dir, exist_ok=True)
-                                    with open(f'{sum_dir}/sum_2.txt', 'w') as f:
+                                    with open(f'{sum_dir}/sum_1.txt', 'w') as f:
                                         f.write(summary)
 
                             except Exception as e:
-                                print(f"An error occurred in task 2: e")
+                                import traceback
+                                print("Full error traceback:")
+                                traceback.print_exc()
+                                print(f"An error occurred in task 1: e")
 
 
-                        task_2_visualization(df)
+                        task_1_visualization(df, sum_dir, plots_dir)
                         Output Requirements
                         The output code must be optimized, error-free, and focused on generating meaningful business insights through visualization.
                         """,

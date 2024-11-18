@@ -6,6 +6,7 @@ aiofiles
 python-multipart
 flask
 waitress
+openpyxl
 kaleido
 python-dotenv
 requests  # if Flask needs to communicate with FastAPI

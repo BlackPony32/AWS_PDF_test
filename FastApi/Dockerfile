@@ -6,6 +6,8 @@ WORKDIR /app
 COPY /requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+ENV PATH="/usr/local/lib/python3.10/site-packages/kaleido/executable:$PATH"
+
 # Copy the entire project directory into the container
 COPY . .
 
