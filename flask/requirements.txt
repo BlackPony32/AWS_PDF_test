@@ -7,6 +7,6 @@ python-multipart
 flask
 waitress
 openpyxl
-kaleido
+kaleido==0.2.1.post1
 python-dotenv
 requests  # if Flask needs to communicate with FastAPI
