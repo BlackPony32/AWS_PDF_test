@@ -61,7 +61,7 @@ def extract_and_execute_code(file_path, user_folder):
         lines = file.readlines()
 
     # Insert the new lines between the 5th and 6th lines (index 4 and 5)
-    lines[5:5] = [line + '\n' for line in new_lines]
+    lines[4:4] = [line + '\n' for line in new_lines]
 
     # Write the modified content back to the file
     with open(file_path, 'w') as file:

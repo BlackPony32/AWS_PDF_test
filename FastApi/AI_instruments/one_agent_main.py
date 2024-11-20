@@ -66,8 +66,10 @@ def AI_generation_plots_summary(_data_dict, user_folder):
 
                         Write code using Plotly GO, each in a standalone function named as task_n_visualization(df).
                         Each function should:
+                        -don't use pie or donut charts in your visualizations - instead, use 'horizontal bars' with full labeling of visualizations.
+                        -An array of visualizations that would be great to use: Marimekko Chart, map visualizations (if addresses are present), Color Palette for Bar Chart
                         -Create an informative visualization, and each visualization style can use only one time (e.g.,one bar graph,one line etc.).
-                        -solid #F5F5F5 background without grid lines (xaxis_showgrid=False, yaxis_showgrid=False)
+                        -solid #F5F5F5 plot background without grid lines (xaxis_showgrid=False, yaxis_showgrid=False)
                         -Include a summary (1500+ characters) explaining the visual insights and relevant business observations.
                         Summary should teach how to read visualization + answer on these qustions:
                         1. What patterns or trends can be observed in the data?
@@ -87,6 +89,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
                         -You are writing a part of the code, so know that df has already been declared. do not overwrite it.
                         and do not write any variable df ! only import lib, functions and call them
                         Code Example you should follow
+                        -always write full code for all {tasks_for_data_num} functions and call it!
                         A good code structure for one function:
 
                         import plotly.graph_objects as go
@@ -107,6 +110,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
                                     fig.update_layout(title='Total Sales Over Time',
                                                       xaxis_title='Date',
                                                       yaxis_title='Total Sales ($)',
+                                                      paper_bgcolor='rgba(245, 245, 245, 1)',
                                                       plot_bgcolor='rgba(245, 245, 245, 1)',
                                                       xaxis_showgrid=False,
                                                       yaxis_showgrid=False)
@@ -142,6 +146,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
 
 
                         task_1_visualization(df, sum_dir, plots_dir)
+                        
                         Output Requirements
                         The output code must be optimized, error-free, and focused on generating meaningful business insights through visualization.
                         """,

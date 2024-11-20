@@ -22,13 +22,15 @@ def final_agent_gen(file_path):
     result = agent_executor.invoke(
         {
             "input": """Analyze my dataset according to the following rules:
-- 80 percent of the answer should be a detailed answer on data analysis -For example, the most valuable customer, the most profitable store or staff, etc.. 
+- Block named "Data Analysis"  70 percents of the answer - should be a detailed answer on data analysis -For example, the most valuable customer, the most profitable store or staff, etc.. 
 For example, the difference in product sales in different periods of time. The answer should be as detailed as possible.
 pay attention to time periods if they are available, and to customers, sales if data is available.
 - It should be a voluminous answer disclosing the data to the maximum!
-- 20 percent based on the data obtained, there should be advice on how to improve the business
-- At the end, point out the negative aspects of the data, such as products that are not selling well or stores that are not bringing in enough product, etc.
-- answer should be only in txt format - not markdown formatting"""
+-  Block named "Business Improvement Suggestions" 30 percents (4 points) - based on the data obtained, there should be advice on how to improve the business
+- At the end, point out the negative aspects (3 points) of the data, such as products that are not selling well or stores that are not bringing in enough product, etc.
+- answer should be only in txt format
+- in block "Business Improvement Suggestions" do not use numbering of paragraphs, only with a dash
+-the ratio of blocks should be 70 to 30 approximately."""
         }
     )
     

@@ -129,10 +129,13 @@ async def upload_file(file: UploadFile = File(...)):
         except Exception as e:
             logger.error(f"Data summary generation error: {e}")
         
-        pdf = PDF(formated_file_name=filename, user_folder=user_folder)
-        pdf_path = await asyncio.to_thread(pdf.create_pdf) 
-        logger.info(f"Generated PDF at {pdf_path}")
-
+        try:
+            pdf = PDF(formated_file_name=filename, user_folder=user_folder)
+            pdf_path = await asyncio.to_thread(pdf.create_pdf) 
+            logger.info(f"Generated PDF at {pdf_path}")
+        except Exception as e:
+            logger.error(f"Generated PDF error: {e}")
+        
         pdf_url = f"/download/{user_folder}/{os.path.basename(pdf_path)}"
 
         # Optionally clean directories

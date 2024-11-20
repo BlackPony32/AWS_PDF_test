@@ -7,7 +7,7 @@ import logging
 LOGO_PATH = 'FastApi/src/icon.ico'
 logger = logging.getLogger(__name__)
 class PDF(FPDF):
-    def __init__(self, start_page_num=1, formated_file_name='File name', user_folder='temp'):
+    def __init__(self, start_page_num=1, formated_file_name='File name', user_folder='temp1'):
         super().__init__()
         self.formated_file_name = formated_file_name
         self.start_page_num = start_page_num
@@ -82,7 +82,7 @@ class PDF(FPDF):
         self.set_text_color(0, 0, 0)
         with open(text_file_path, 'r') as file:
             text = file.read()
-        self.set_font("Arial", size=11)
+        self.set_font('helvetica', size=11)
         self.multi_cell(0, 6, text)
 
     
@@ -121,8 +121,61 @@ class PDF(FPDF):
                 logger.warning(f"Error adding text from {text_file_path}: {e}. Using fallback text.")
                 self.add_plain_text_to_pdf(extra_text_path)
             
-            
+    def extract_sections(self, file_path):
+        """Extracts specific sections from the text file based on headings.
 
+        Args:
+            file_path (str): Path to the text file.
+
+        Returns:
+            dict: A dictionary containing the extracted sections.
+        """
+        sections = {
+            "Detailed Analysis": [],
+            "Business Improvement Suggestions": [],
+            "Negative Aspects": []
+        }
+
+        # Start with the in_analysis flag set to True
+        in_analysis = True
+        in_suggestions = False
+        in_negatives = False
+
+        with open(file_path, "r") as file:
+            for line in file:
+                line = line.strip()
+
+                # Check for "Business Improvement Suggestions" (case insensitive)
+                if "business improvement suggestions" in line.lower():
+                    in_analysis = False
+                    in_suggestions = True
+                    in_negatives = False
+                    continue
+                
+                # Check for "Negative Aspects" (case insensitive)
+                if "negative aspects" in line.lower():
+                    in_analysis = False
+                    in_suggestions = False
+                    in_negatives = True
+                    continue
+
+                # Collect lines for the respective sections
+                if in_analysis:
+                    sections["Detailed Analysis"].append(line)
+                    sections["Detailed Analysis"].append('\n')
+                elif in_suggestions:
+                    sections["Business Improvement Suggestions"].append(line)
+                    sections["Business Improvement Suggestions"].append('\n')
+                elif in_negatives:
+                    sections["Negative Aspects"].append(line)
+                    sections["Negative Aspects"].append('\n')
+
+        # Join the lines to form paragraphs
+        for key in sections:
+            sections[key] = " ".join(sections[key])
+
+        return sections
+    
     def footer(self):
         try:
             # Date report created
@@ -155,9 +208,38 @@ class PDF(FPDF):
             text = file.read()
         self.set_font('helvetica', size=12)  # Set bold font
         lines  = text.split('\n')
-        for line in lines:
-            self.multi_cell(0, 10, line, markdown=True,new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        try:
+            extracted_sections = self.extract_sections(final_sum_path)
 
+            for line in extracted_sections.get("Detailed Analysis").split('\n'):
+                if False:
+                    pass
+                else:
+                    self.multi_cell(0, 10, line, markdown=True,new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+            self.add_page()
+            self.set_fill_color(231,242,236)
+            self.rect(8, 20, 194, 250, round_corners=True, style="DF")
+            self.set_font('helvetica', size=17, style='B')  # Set bold font
+            self.set_xy(15, 30)
+            self.cell(0,8, "Business Improvement Suggestions",center=True, markdown=True,align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+            self.set_font('helvetica', size=12)  # Set bold font
+            self.set_xy(15, 50)
+            for line in extracted_sections.get("Business Improvement Suggestions").split('\n'):
+                if False:
+                    pass
+                else:
+                    self.multi_cell(0,8, line, markdown=True,new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+            for line in extracted_sections.get("Negative Aspects").split('\n'):
+                if False:
+                    pass
+                else:
+                    self.multi_cell(0, 8, line, markdown=True,new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        except Exception as e:
+            logger.error("Error add final summary: ", e)
+                
     def create_pdf(self):
         primary_file_path = "FastApi/src/final_gen.txt"
         fallback_file_path = "FastApi/src/extra_final.txt"
@@ -173,5 +255,5 @@ class PDF(FPDF):
         self.output(pdf_path)
         return pdf_path
 # Usage example
-#pdf = PDF(start_page_num=1, formated_file_name="GNGR_20240504 .xlsx")
+#pdf = PDF(start_page_num=1, formated_file_name="GNGR_20240504 .xlsx", user_folder='0597d292-a72a-11ef-896f-70665514def7')
 #pdf.create_pdf()
