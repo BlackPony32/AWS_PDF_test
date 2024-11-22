@@ -20,7 +20,7 @@ Comprehensive documentation is available [here](https://vk0.gitbook.io/pdf-from-
 ## Tech Stack
 
 * **Backend** : FastAPI
-* **Visualization** : Plotly / Matplotlib
+* **Visualization** : Plotly
 * **AI Insights** : Powered by OpenAI
 * **File Handling** : Pandas and Asyncio for large file support
 
@@ -45,6 +45,7 @@ Comprehensive documentation is available [here](https://vk0.gitbook.io/pdf-from-
 ### Run the API
 
 1. Start the FastAPI server
+
    uvicorn main:app --reload
 2. Access the API documentation:
    * Swagger UI: [http://127.0.0.1:8000/docs]()
