@@ -1,6 +1,9 @@
 import shutil
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi import  Query
+from typing import Optional
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from starlette.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import BackgroundTasks
@@ -81,9 +84,24 @@ async def clean_directories(user_id):
         await loop.run_in_executor(executor, shutil.rmtree, pdf_folder)
     logger.info(f"Deleted user folder: {user_id}")
 
+# Define a BaseModel for the JSON payload
+class FormData(BaseModel):
+    q1: str
+    q2: str
+    q3: str
+    q4: str
+
 @app.post("/src/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+    file: UploadFile = File(...),
+    q1: Optional[str] = Query(...),
+    q2: Optional[str] = Query(...),
+    q3: Optional[str] = Query(...),
+    q4: Optional[str] = Query(...)
+):
     user_folder = user_uuid()
+    data_dict = {"q1": q1, "q2": q2, "q3": q3, "q4": q4}
+    logger.info(f"got : {data_dict}")
     UPLOAD_FOLDER = f'FastApi/src/uploads/{user_folder}'
     PDF_FOLDER = f'FastApi/src/pdfs/{user_folder}'
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -142,8 +160,8 @@ async def upload_file(file: UploadFile = File(...)):
         # await clean_directories()
         download_pdf_url = f"FastApi/src/pdfs/{user_folder}/{os.path.basename(pdf_path)}"
         pdf_filename = os.path.basename(download_pdf_url)
-        return JSONResponse(content={"message": "File processed successfully", "action": action, "pdf_url": pdf_url,
-                                     "download_pdf_url" : download_pdf_url, "user_folder": user_folder,
+        return JSONResponse(content={"message": "File processed successfully", "action": action, "download_pdf_url": pdf_url,
+                                     "pdf_url" : download_pdf_url, "user_folder": user_folder,
                                      "pdf_filename": pdf_filename})
 
     except Exception as e:
