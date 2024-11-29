@@ -100,6 +100,7 @@ async def upload_file(
     q4: Optional[str] = Query(...)
 ):
     user_folder = user_uuid()
+    #test
     data_dict = {"q1": q1, "q2": q2, "q3": q3, "q4": q4}
     logger.info(f"got : {data_dict}")
     UPLOAD_FOLDER = f'FastApi/src/uploads/{user_folder}'
