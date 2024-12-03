@@ -13,7 +13,7 @@ import logging
 import asyncio
 import aiofiles
 #from FastApi.additional_functions.pdf_maker import generate_pdf
-from FastApi.additional_functions.pdf_maker import PDFReport
+from FastApi.additional_functions.pdf_maker import PDF
 from FastApi.additional_functions.preprocess_data import preprocess_data
 from FastApi.AI_instruments.one_agent_main import AI_generation_plots_summary
 from FastApi.AI_instruments.final_sum import final_gen
@@ -53,7 +53,7 @@ executor = ThreadPoolExecutor()
 
 def user_uuid():
     import uuid
-    user_folder = str(uuid.uuid4())
+    user_folder = str(uuid.uuid1())
     return user_folder
 
 async def convert_excel_to_csv(excel_file_path): 
@@ -74,7 +74,6 @@ async def clean_directories(user_id):
     plots_folder = f'FastApi/src/plots/{user_id}'
     summary_folder = f'FastApi/src/summary/{user_id}'
     pdf_folder = f'FastApi/src/pdfs/{user_id}'
-    uploads_folder = f'FastApi/src/uploads/{user_id}'
     loop = asyncio.get_event_loop()
 
     if os.path.exists(plots_folder):
@@ -83,8 +82,6 @@ async def clean_directories(user_id):
         await loop.run_in_executor(executor, shutil.rmtree, summary_folder)
     if os.path.exists(pdf_folder):
         await loop.run_in_executor(executor, shutil.rmtree, pdf_folder)
-    if os.path.exists(uploads_folder):
-        await loop.run_in_executor(executor, shutil.rmtree, uploads_folder)
     logger.info(f"Deleted user folder: {user_id}")
 
 # Define a BaseModel for the JSON payload
@@ -152,7 +149,7 @@ async def upload_file(
             logger.error(f"Data summary generation error: {e}")
         
         try:
-            pdf = PDFReport(pdf_file_name=filename, user_folder=user_folder)
+            pdf = PDF(formated_file_name=filename, user_folder=user_folder)
             pdf_path = await asyncio.to_thread(pdf.create_pdf) 
             logger.info(f"Generated PDF at {pdf_path}")
         except Exception as e:

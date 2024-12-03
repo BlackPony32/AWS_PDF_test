@@ -51,7 +51,7 @@ def extract_and_execute_code(file_path, user_folder):
     "        #print(df.head())",
     "    except Exception as e:",
     "        raise Exception(f\"Error while reading file 2: {e}\")",
-    "#print(df.head)"
+    "print(df.head)"
 ]
     except Exception as e:
         pass

@@ -1,1 +1,1 @@
-There was an error in this visualization, if this happens with other visualizations, try running the process again. If that doesn't work, there may be a problem with the data.
+If the error occurs with other visualizations, try starting the process again. If it doesn't work, there may be a problem with the data.
