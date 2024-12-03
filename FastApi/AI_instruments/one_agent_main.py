@@ -35,7 +35,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
         backstory="""You're working with visual studio code with plotly go code.""",
         allow_delegation=False,
         memory=True,
-    	verbose=True
+    	verbose=False
     )
 
     #_______________________tasks block_________________________________________
@@ -80,7 +80,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
                         -Use fig.add_trace() to combine graphs if needed. (like bar sales and line data dependency for example)
                         -Save visualizations as PNG files in {plots_dir} (e.g., chart_n.png).
                         -Save each summary in {sum_dir} (e.g., sum_n.txt).
-                        Coding Standards
+                        Coding Standards 
 
                         -Only use columns that exist in the dataframe, checking existence with conditionals.
                         -Ensure all functions handle errors using try-except.
@@ -139,9 +139,6 @@ def AI_generation_plots_summary(_data_dict, user_folder):
                                         f.write(summary)
 
                             except Exception as e:
-                                import traceback
-                                print("Full error traceback:")
-                                traceback.print_exc()
                                 print(f"An error occurred in task 1: e")
 
 

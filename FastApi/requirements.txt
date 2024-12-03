@@ -1,5 +1,4 @@
 fpdf2
-fastapi
 docker
 markdown2
 openpyxl
@@ -19,3 +18,4 @@ aiofiles
 crewai
 crewai_tools
 python-multipart
+reportlab==4.2.5

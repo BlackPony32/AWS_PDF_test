@@ -2,7 +2,7 @@ fpdf2
 fastapi
 docker
 markdown2
-plotly
+plotly==5.3.1
 langchain-openai==0.1.24
 langchain-community==0.2.17
 langchain-cohere==0.1.9
@@ -17,5 +17,5 @@ aiofiles
 crewai
 crewai_tools
 python-multipart
-flask
+reportlab==4.2.5
 requests  # if Flask needs to communicate with FastAPI

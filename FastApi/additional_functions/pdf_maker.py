@@ -1,259 +1,666 @@
-import os
-from fpdf import FPDF
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 from datetime import datetime
-from fpdf.enums import XPos, YPos, Align
+import re
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import Paragraph, Spacer, SimpleDocTemplate
+from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.utils import ImageReader
+from datetime import datetime
+from reportlab.platypus import XPreformatted
+import os
+
+from textwrap import wrap
+from reportlab.lib.colors import HexColor
+from reportlab.lib.units import mm, inch
 import logging
-# Path to your logo file
-LOGO_PATH = 'FastApi/src/icon.ico'
 logger = logging.getLogger(__name__)
-class PDF(FPDF):
-    def __init__(self, start_page_num=1, formated_file_name='File name', user_folder='temp1'):
-        super().__init__()
-        self.formated_file_name = formated_file_name
+
+import reportlab.rl_config
+reportlab.rl_config.warnOnMissingFontGlyphs = 0
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+pdfmetrics.registerFont(TTFont('Inter', 'static\Inter_18pt-Regular.ttf'))
+pdfmetrics.registerFont(TTFont('InterL', 'static\Inter_18pt-Light.ttf'))
+pdfmetrics.registerFont(TTFont('InterM', 'static\Inter_18pt-Medium.ttf'))
+pdfmetrics.registerFont(TTFont('InterBd', 'static\Inter_18pt-Bold.ttf'))
+pdfmetrics.registerFont(TTFont('InterIt', 'static\Inter_18pt-BlackItalic.ttf'))
+pdfmetrics.registerFont(TTFont('InterBI', 'static\Inter_18pt-BoldItalic.ttf'))
+
+class PDFReport:
+    def __init__(self, start_page_num=1, pdf_file_name="File name", user_folder="temp", total_pages=8):
         self.start_page_num = start_page_num
+        self.pdf_file_name = pdf_file_name
         self.user_folder = user_folder
+        self.page_size = (210 * mm, 297 * mm)
+        self.styles = getSampleStyleSheet()
         
-    def format_filename(self, filename: str) -> str:
-        # Define limits and structure based on file type
-        if filename.endswith('.csv'):
-            prefix_len = 7  # First 7 characters
-            suffix_len = 4  # Last 4 characters before ".csv"
-            extension = '.csv'
-        elif filename.endswith('.xlsx'):
-            prefix_len = 6  # First 6 characters
-            suffix_len = 4  # Last 4 characters before ".xlsx"
-            extension = '.xlsx'
-        elif filename.endswith('.xls'):
-            prefix_len = 7  # First 7 characters
-            suffix_len = 3  # Last 3 characters before ".xls"
-            extension = '.xls'
-        else:
-            # For files without these extensions, return filename padded to 17
-            return filename.ljust(17)
+        self.start_page_num = start_page_num
+        self.total_pages = total_pages
 
-        # Check if filename (excluding extension) is longer than 17
-        base_name = filename[: -len(extension)]
-        if len(filename) > 17:
-            # Construct the shortened filename with specified prefix, suffix, and extension
-            return base_name[:prefix_len] + '...' + base_name[-suffix_len:] + extension
-        else:
-            # If filename is 17 or shorter, pad it to exactly 17 characters
-            return filename.ljust(17)
+    def parse_markdown(self, markdown_text):
+        """This func get text from file, and return list of lines from it"""
+        text = []
+        lines = []
+        for char in markdown_text:
+            if char == '\n':
+                text.append(list(lines))
+                lines =[]
+                #print(1)
+            else:
+                lines.append(char)
 
-    def header(self):
-        try:
-            # Background rectangle for the logo and text area
-            self.set_fill_color(217, 217, 217)
-            self.rect(149, 7.0, 55, 7, round_corners=True, style="F")
-
-            # Add company logo if it exists
-            if os.path.exists(LOGO_PATH):
-                self.image(LOGO_PATH, x=9.2, y=8.2, w=5)  # Adjusted width for smaller logo
-
-            # Company name
-            self.set_xy(14, 3.3)
-            self.set_font("helvetica", 'B', 16)
-            self.set_text_color(55, 55, 55)
-            self.cell(100, 15, text="simply", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
-
-            self.set_xy(32, 3.3)
-            self.set_font("helvetica")
-            self.cell(100, 15, text="depo", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
-
-            # Main title
-            self.set_xy(114, 3.3)
-            self.set_font("helvetica", 'B', 8)
-            self.set_text_color(0, 0, 0)
-            self.cell(100, 15, text="Analyzed report: ", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
-
-            # Report filename
-            self.set_xy(139, 3.3)
-            self.set_font("helvetica")
-            formated_file_name = self.format_filename(self.formated_file_name)
-            self.cell(100, 15, text=formated_file_name, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
-            
-            # Line break after header
-            self.ln(4)
-        except Exception as e:
-            print(f"in header error: {e}")
-    
-    def add_plain_text_to_pdf(self, text_file_path):
-        """Helper function to add plain text to the PDF from a file."""
-        self.set_text_color(0, 0, 0)
-        with open(text_file_path, 'r') as file:
-            text = file.read()
-        self.set_font('helvetica', size=11)
-        self.multi_cell(0, 6, text)
-
-    
-    def add_viz_and_sum_pages(self, num_pages=5):
-        self.set_font("helvetica")
+        final_list_text = []
+        for lst in text:
+            joined_text = ''.join(lst).strip()
+            final_list_text.append(joined_text)
+        return final_list_text
+    def add_improve_suggestions(self, c, file_path, final_sum_path=1):
         
-        #self.add_page()
-        UPLOAD_FOLDER = f'FastApi/src/uploads/{self.user_folder}'
-        PDF_FOLDER = f'FastApi/src/pdfs/{self.user_folder}'
-        PLOTS_FOLDER = f'FastApi/src/plots/{self.user_folder}'
-        SUMMARY_FOLDER = f'FastApi/src/summary/{self.user_folder}'
-        page_width = 210
-        for i in range(1, num_pages+1):
-            self.add_page()
-            plot_image_path = os.path.join(PLOTS_FOLDER, f"chart_{i}.png")
-            text_file_path = os.path.join(SUMMARY_FOLDER, f"sum_{i}.txt")
-            extra_plot_path = os.path.join('FastApi/src/extra_plots.png')
-            extra_text_path = os.path.join('FastApi/src/extra_sum.txt')
+        self.header(c)
 
-            try:
-                image_width = 180
-                x_position = (page_width - image_width) / 2
-                self.image(plot_image_path, x=x_position, y=30, w=image_width)
-            except Exception as e:
-                logger.warning(f"Error adding plot {plot_image_path}: {e}. Using fallback image.")
-                image_width = 180
-                x_position = (page_width - image_width) / 2
+        # Set fill and stroke colors
+        fill_color = HexColor("#f5faf7")  # 5% opacity to color #409A65 /  https://www.diversifyindia.in/rgba-to-hex-converter/
+        stroke_color = HexColor("#409A65")  # 100% opacity
+        c.setFillColor(fill_color)
+        c.setStrokeColor(stroke_color)
 
-                self.image(extra_plot_path, x=x_position, y=30, w=image_width, h=120)
+        # Draw the rectangle with adjusted stroke weight
+        x, y= 20, 70  # X-coordinate of the lower-left corner
+        width = 555  # Width of the rectangle
+        height = 710  # Height of the rectangle
+        corner_radius = 18  # Corner radius
 
-            self.ln(140)
+        # Increase border thickness
+        stroke_weight = 3  # Adjusted border thickness
+        c.setLineWidth(stroke_weight)
+        
+        # Adjust the rectangle size to simulate outside stroke
+        adjust = stroke_weight / 2
+        c.roundRect(x + adjust, y + adjust, width - stroke_weight, height - stroke_weight, 
+                    corner_radius, stroke=1, fill=1)
 
-            try:
-                self.add_plain_text_to_pdf(text_file_path)
-            except Exception as e:
-                logger.warning(f"Error adding text from {text_file_path}: {e}. Using fallback text.")
-                self.add_plain_text_to_pdf(extra_text_path)
+        #text block
+        text = "<b>Achievements and Suggestions for Growth</b>"
+        styles = getSampleStyleSheet()
+        style = styles["Title"]
+        style.fontSize = 14
+        style.leading = 23
+        #style.aligment = TA_CENTER
+        xpreformatted = XPreformatted(text, style)
+        xpreformatted.wrapOn(c, 400, 300)
+        xpreformatted.drawOn(c, x=90, y=100)
+        
+        c.setFont('InterBd', 17)
+        c.setFillColorRGB(0, 0, 0)  # Set text color to black
+        
+        # Read text from the file
+        extracted_sections = self.extract_sections(file_path)
+        markdown_text = extracted_sections
+        markdown_text = markdown_text.get("Achievements_Suggestions_Growth")
+
+        render_text = self.parse_markdown(markdown_text)
+
+        page_height = 297*mm
+        x, y = 35, 145  # Start position (from the top-left corner)
+        line_height = 18  # Space between lines
+        #max_line_width = 520  # Max width for wrapping text (e.g., 520 points)
+        font_name = "Inter"
+        font_size = 14
+
+        text_object = c.beginText(x, y)
+        text_object.setFont(font_name, font_size)
+
+
+        # Function to wrap text at the maximum width
+        from textwrap import wrap
+
+        # Process each line of data
+        temp =1250
+        ll=[]
+        #print(render_text)
+        for line in render_text:
+            text_object.setLeading(line_height)  # Line spacing
+            if line.strip() == "":  # Handle empty lines (blank lines)
+                #text_object.textLine("")  # Add a blank line
+                temp -= line_height
+                continue
+            check_bold_line = False
+            # Use a regex to find bold substrings (text between **)
+            if ("**") in line:
+                parts = re.split(r'(\*\*.*?\*\*)', line)
+                ll.append(parts)
+
+            #if line.startswith("**") and line.endswith("**"):  # Bold detection
+            if line.startswith("**") and line.endswith("**"):  # Bold detection
+                check_bold_line = True
+                text_object.setFont("InterBd", font_size)  # Set bold font
+                line = line.strip("**")  # Remove bold markers
+            else:
+                check_bold_line = False
+                line = line.strip("**")  # Remove bold markers
+                text_object.setFont(font_name, font_size)  # Regular font
+
+            # Wrap text to fit within max line width
+            wrapped_lines = wrap(line, width=76)  # Wrap text to 90 characters, or adjust as necessary
+
+            for wrapped_line in wrapped_lines:
+                #print(temp)
+                wrapped_line_c = ''
+                if "**" in wrapped_line:
+                    for i in wrapped_line:
+                        if i == "*":
+                            pass
+                        else:
+                            wrapped_line_c +=i
+
+                    wrapped_line = wrapped_line_c
+                if temp - line_height < 30:  # If text exceeds the page height, create a new page
+                    c.drawText(text_object)  # Draw current text before creating a new page
+
+                    c.showPage()  # Start a new page
+                    #y = page_height - 50  # Reset Y to top of the new page
+                    y = 40
+                    temp =750
+                    text_object = c.beginText(x, y)  # Create a new text block on the new page
+                    text_object.setFont(font_name, font_size) #TODO potential bug if line bold but begin next page can be common
+                    text_object.setLeading(line_height)  # Reset line spacing
+
+                # Add the wrapped line to the text object
+                #text_object.textLine(f'\u2022 {wrapped_line}')  #TODO here can split line for **
+                if wrapped_line.startswith('-'):
+                    wrapped_line_c = ''
+                    for i in wrapped_line:
+                        if i == "-":
+                            pass
+                        else:
+                            wrapped_line_c +=i
+
+                    wrapped_line ='  ' + '\u2022 ' + wrapped_line_c
+                if '\u2022 ' in wrapped_line:
+                    text_object.textLine('\n')  
+                    temp -= line_height  # Move to the next line
+                    text_object.textLine(f'{wrapped_line}')  
+                    temp -= line_height  # Move to the next line
+                else:
+                    if check_bold_line:
+                        text_object.textLine('\n')  
+                        temp -= line_height
+                        text_object.textLine(f'{wrapped_line}')  
+                        temp -= line_height  # Move to the next line
+                    else:
+                        text_object.textLine(f'{wrapped_line}')  
+                        temp -= line_height
+
+        # Draw the text on the canvas
+        c.drawText(text_object)
+        
+        self.footer(c, 6)
+        c.showPage()
+
+    def add_data_analytic(self, c, file_path):
+        self.header(c)
+        from markdown import markdown
+        x, y = 20, 90  # Start from the top of the page
+        textobject = c.beginText(x, y)
+        textobject.setFont('Inter', 12)
+        line_height = 18  # Adjust this value for desired line spacing
+        textobject.setLeading(line_height)
+
+        extracted_sections = self.extract_sections(file_path)
+        markdown_text = extracted_sections
+        markdown_text = markdown_text.get("Detailed Analysis")
+        #print(markdown_text)
+        render_text = self.parse_markdown(markdown_text)
+
+        page_height = 297*mm
+        x, y = 30, 80  # Start position (from the top-left corner)
+        line_height = 18  # Space between lines
+        #max_line_width = 520  # Max width for wrapping text (e.g., 520 points)
+        font_name = "Inter"
+        font_size = 12
+
+        text_object = c.beginText(x, y)
+        text_object.setFont(font_name, font_size)
+
+
+        # Function to wrap text at the maximum width
+        from textwrap import wrap
+
+        # Process each line of data
+        temp =820 #one more exist if new page
+        ll=[]
+        #print(render_text)
+        for line in render_text:
+            text_object.setLeading(line_height)  # Line spacing
+            if line.strip() == "":  # Handle empty lines (blank lines)
+                text_object.textLine("")  # Add a blank line
+                temp -= line_height
+                continue
             
+            # Use a regex to find bold substrings (text between **)
+            if ("**") in line:
+                parts = re.split(r'(\*\*.*?\*\*)', line)
+                ll.append(parts)
+
+            #if line.startswith("**") and line.endswith("**"):  # Bold detection
+            if line.startswith("**") and line.endswith("**"):  # Bold detection
+                text_object.setFont("InterBd", font_size)  # Set bold font
+                line = line.strip("**")  # Remove bold markers
+            else:
+                line = line.strip("**")  # Remove bold markers
+                text_object.setFont(font_name, font_size)  # Regular font
+
+            # Wrap text to fit within max line width
+            wrapped_lines = wrap(line, width=89)  # Wrap text to 90 characters, or adjust as necessary
+
+            for wrapped_line in wrapped_lines:
+                #print(temp)
+                wrapped_line_c = ''
+                if "**" in wrapped_line:
+                    for i in wrapped_line:
+                        if i == "*":
+                            pass
+                        else:
+                            wrapped_line_c +=i
+
+                    wrapped_line = wrapped_line_c
+                if temp - line_height < 30:  # If text exceeds the page height, create a new page
+                    c.drawText(text_object)  # Draw current text before creating a new page
+
+                    c.showPage()  # Start a new page
+                    #y = page_height - 50  # Reset Y to top of the new page
+                    y = 40
+                    temp =820
+                    text_object = c.beginText(x, y)  # Create a new text block on the new page
+                    text_object.setFont(font_name, font_size) #TODO potential bug if line bold but begin next page can be common
+                    text_object.setLeading(line_height)  # Reset line spacing
+
+                # Add the wrapped line to the text object
+                #text_object.textLine(f'\u2022 {wrapped_line}')  #TODO here can split line for **
+                
+                if wrapped_line.startswith('-'):
+                    wrapped_line_c = ''
+                    for i in wrapped_line:
+                        if i == "-":
+                            pass
+                        else:
+                            wrapped_line_c +=i
+
+                    wrapped_line = wrapped_line_c
+
+                    wrapped_line ='  ' + '\u2022 ' + wrapped_line
+
+                if wrapped_line.startswith('1.') or wrapped_line.startswith('2.') or wrapped_line.startswith('3.') or \
+                            wrapped_line.startswith('4.') or wrapped_line.startswith('5.') or wrapped_line.startswith('6.') or wrapped_line.startswith('7.') \
+                                or wrapped_line.startswith('8.') or wrapped_line.startswith('9.'):    
+                    text_object.textLine(wrapped_line) #TODO here can split line for **
+                    temp -= line_height  # Move to the next line
+                    text_object.textLine('\n')
+                    temp -= line_height  # Move to the next line
+                else:
+                    text_object.textLine(wrapped_line) #TODO here can split line for **
+                    temp -= line_height    
+                
+
+        # Draw the text on the canvas
+        c.drawText(text_object)
+        
+        self.footer(c, 5) #+1
+        c.showPage()
+    
     def extract_sections(self, file_path):
-        """Extracts specific sections from the text file based on headings.
-
-        Args:
-            file_path (str): Path to the text file.
-
-        Returns:
-            dict: A dictionary containing the extracted sections.
-        """
+        """Extracts specific sections from the text file based on headings."""
         sections = {
             "Detailed Analysis": [],
-            "Business Improvement Suggestions": [],
-            "Negative Aspects": []
+            "Achievements_Suggestions_Growth": []  #Achievements and Suggestions for Growth
         }
 
         # Start with the in_analysis flag set to True
         in_analysis = True
         in_suggestions = False
-        in_negatives = False
+
 
         with open(file_path, "r") as file:
             for line in file:
-                line = line.strip()
+                #line = line.strip()
 
                 # Check for "Business Improvement Suggestions" (case insensitive)
-                if "business improvement suggestions" in line.lower():
+                if "achievements and suggestions for growth" in line.lower():
                     in_analysis = False
                     in_suggestions = True
-                    in_negatives = False
                     continue
                 
-                # Check for "Negative Aspects" (case insensitive)
-                if "negative aspects" in line.lower():
-                    in_analysis = False
-                    in_suggestions = False
-                    in_negatives = True
-                    continue
 
                 # Collect lines for the respective sections
                 if in_analysis:
                     sections["Detailed Analysis"].append(line)
-                    sections["Detailed Analysis"].append('\n')
+                    #sections["Detailed Analysis"].append('\n')
                 elif in_suggestions:
-                    sections["Business Improvement Suggestions"].append(line)
-                    sections["Business Improvement Suggestions"].append('\n')
-                elif in_negatives:
-                    sections["Negative Aspects"].append(line)
-                    sections["Negative Aspects"].append('\n')
+                    sections["Achievements_Suggestions_Growth"].append(line)
+                    sections["Achievements_Suggestions_Growth"].append('\n')
+
 
         # Join the lines to form paragraphs
         for key in sections:
             sections[key] = " ".join(sections[key])
 
         return sections
-    
-    def footer(self):
+
+    def add_section_to_page(self, c, section_title, extracted_sections):
+        """Adds the content of each section to the page."""
+        section_content = extracted_sections.get(section_title, [])
+        
+        y_position = 50  # Starting y position for content
+        
+        for line in section_content.split("\n"):
+            paragraph = Paragraph(line, self.styles['Normal'])
+            paragraph.wrap(500, y_position)
+            paragraph.drawOn(c, 15, y_position)
+            y_position -= paragraph.getHeight() + 5  # Move down for the next line
+
+        
+    def format_filename(self, filename: str) -> str:
+        """Format filename based on extension."""
+        extensions = ['.csv', '.xlsx', '.xls']
+        for ext in extensions:
+            if filename.endswith(ext):
+                prefix_len, suffix_len = (7, 4) if ext == ".csv" else (6, 4)
+                base_name = filename[:-len(ext)]
+                if len(base_name) > 13:
+                    return f"{base_name[:prefix_len]}...{base_name[-suffix_len:]}{ext}"
+                else:
+                    return filename.ljust(13)
+            else:
+                pass
+        return filename.ljust(13)
+
+    def header(self, c):
+        """Add the header to each page."""
+        c.saveState()
+        
+        image_path = "SD logo white.png"
+        c.scale(1,-1)
+        x_val = 20
+        y_val = -41
+        width = 632/5
+        height = 92/5
+        try:
+            c.drawImage(ImageReader(image_path), x_val, y_val, width=width, height=height, mask='auto')
+        except Exception as e:
+            logging.warning(f'Error add logo: {e}')
+        c.restoreState()
+
+        #file name block
+        formated_file_name = self.format_filename(self.pdf_file_name)
+        
+        
+        fill_color = HexColor("#ececec")  # 5% opacity to color #409A65 /  https://www.diversifyindia.in/rgba-to-hex-converter/
+        stroke_color = HexColor("#ececec")  # 100% opacity
+        c.setFillColor(fill_color)
+        c.setStrokeColor(stroke_color)
+
+        # Draw the rectangle with adjusted stroke weight
+        x = 370  # X-coordinate of the lower-left corner
+        y = 18.6  # Y-coordinate of the lower-left corner
+        width = 818/4 # Width of the rectangle
+        height = 122/4  # Height of the rectangle
+        corner_radius = 5  # Corner radius
+
+
+        # Increase border thickness
+        stroke_weight = 3  # Adjusted border thickness
+        c.setLineWidth(stroke_weight)
+        
+        # Adjust the rectangle size to simulate outside stroke
+        adjust = stroke_weight / 2
+        c.roundRect(x + adjust, y + adjust, width - stroke_weight, height - stroke_weight, 
+                    corner_radius, stroke=1, fill=1)
+        
+        
+        
+        c.setFont('InterBd',11)
+        c.setFillColorRGB(0,0,0)
+        c.drawString(378,37, f"Analyzed report:")
+        
+        c.setFont('Inter',11)
+        c.setFillColorRGB(0,0,0)
+        c.drawString(473,37, f"{formated_file_name}")
+
+    def footer(self, c, current_page):
+        """Add footer to each page."""
         try:
             # Date report created
             date_rep = datetime.now().strftime('%m/%d/%Y')
-            self.set_font("helvetica")
-            self.set_text_color(0, 0, 0)
+
+            # Font setup for the footer
+            c.setFont("InterL", 13)
+            c.setFillColorRGB(0, 0, 0)  # Text color: black
 
             # Date at bottom-left corner
-            self.set_xy(5, -15)
-            self.cell(w=0, h=10, text="Date Exported", align=Align.L)
-            self.set_font("helvetica", 'B', 10)
-            self.set_xy(34, -15)
-            self.cell(w=0, h=10, text=date_rep, align=Align.L)
+            c.drawString(20, 815, "Date Exported:")  # x=5, y=15 from bottom-left
+            c.setFont("InterM", 13)
+            c.drawString(110, 815, date_rep)
 
             # Page numbering at bottom-right corner
-            self.set_font("helvetica")
-            self.set_xy(188, -15)
-            self.cell(w=0, h=10, text="Page", align=Align.L)
-            page_num = self.page_no() + self.start_page_num - 1
-            self.set_font("helvetica", 'B', 10)
-            self.set_xy(197, -15)
-            self.cell(w=0, h=10, text=f"{int(page_num)}/{8}", align=Align.L)
+            c.setFont("InterL", 13)
+            c.drawRightString(573, 815, f"Page {current_page+1}")
+
         except Exception as e:
             print(f"in footer error: {e}")
 
-    def add_text(self, final_sum_path):
-        self.add_page()
-        self.set_auto_page_break(auto=True, margin=15)
-        with open(final_sum_path, 'r') as file:
-            text = file.read()
-        self.set_font('helvetica', size=12)  # Set bold font
-        lines  = text.split('\n')
-        try:
-            extracted_sections = self.extract_sections(final_sum_path)
-
-            for line in extracted_sections.get("Detailed Analysis").split('\n'):
-                if False:
-                    pass
-                else:
-                    self.multi_cell(0, 10, line, markdown=True,new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-
-            self.add_page()
-            self.set_fill_color(231,242,236)
-            self.rect(8, 20, 194, 250, round_corners=True, style="DF")
-            self.set_font('helvetica', size=17, style='B')  # Set bold font
-            self.set_xy(15, 30)
-            self.cell(0,8, "Business Improvement Suggestions",center=True, markdown=True,align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-
-            self.set_font('helvetica', size=12)  # Set bold font
-            self.set_xy(15, 50)
-            for line in extracted_sections.get("Business Improvement Suggestions").split('\n'):
-                if False:
-                    pass
-                else:
-                    self.multi_cell(0,8, line, markdown=True,new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-
-            for line in extracted_sections.get("Negative Aspects").split('\n'):
-                if False:
-                    pass
-                else:
-                    self.multi_cell(0, 8, line, markdown=True,new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        except Exception as e:
-            logger.error("Error add final summary: ", e)
-                
-    def create_pdf(self):
-        primary_file_path = "FastApi/src/final_gen.txt"
-        fallback_file_path = "FastApi/src/extra_final.txt"
-        PDF_FOLDER = f'FastApi/src/pdfs/{self.user_folder}'
-        if not os.path.exists(PDF_FOLDER):
-            os.makedirs(PDF_FOLDER)
-        path = 'FastApi/src/final_gen.txt'
-        self.add_viz_and_sum_pages()
-        self.add_text(path)
+    def add_viz_and_summary(self, c,user_folder, num_pages=5):
+        """Add visualization and summary pages."""
+        UPLOAD_FOLDER = f'FastApi/src/uploads/{user_folder}'
+        PDF_FOLDER = f'FastApi/src/pdfs/{user_folder}'
+        PLOTS_FOLDER = f'FastApi/src/plots/{user_folder}'
+        SUMMARY_FOLDER = f'FastApi/src/summary/{user_folder}'
         
-        pdf_filename = f"{os.path.splitext(self.formated_file_name)[0]}.pdf"
-        pdf_path = os.path.join(PDF_FOLDER, pdf_filename)
-        self.output(pdf_path)
+        extra_plot_path = os.path.join('FastApi/src/extra_plots.png')
+        extra_text_path = os.path.join('FastApi/src/extra_sum.txt')
+        
+        for folder in [UPLOAD_FOLDER, PDF_FOLDER, PLOTS_FOLDER, SUMMARY_FOLDER]:
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+                
+        for i in range(1,num_pages+1):
+            self.header(c)
+            
+            c.saveState()
+
+            c.scale(1,-1)
+            x_val = 17.5
+            y_val = -382
+            #width = 196 * mm
+            #height = 110*mm            
+            width = 16*35.55
+            height = 9*36.55
+            try:
+                plot_image_path = os.path.join(PLOTS_FOLDER, f"chart_{i}.png")
+                c.drawImage(ImageReader(plot_image_path), x_val, y_val, width=width, height=height, mask='auto')
+            except Exception as e:
+                logger.warning(f"Error adding plot {plot_image_path}: {e}. Using fallback image.")    
+                c.drawImage(ImageReader(extra_plot_path), x_val, y_val, width=width, height=height, mask='auto')
+            
+                
+            c.restoreState()
+            
+            stroke_color = HexColor("#FFFFFF")  # 100% opacity 
+            c.setStrokeColor(stroke_color)
+            
+            # Draw the rectangle with adjusted stroke weight
+            x, y= 8, 50
+
+            width = 17*34
+            height = 10*34.55
+            corner_radius = 12
+            # Increase border thickness
+            stroke_weight = 13  # Adjusted border thickness
+            c.setLineWidth(stroke_weight)
+            
+            # Adjust the rectangle size to simulate outside stroke
+            adjust = stroke_weight / 2
+            c.roundRect(x + adjust, y + adjust, width - stroke_weight, height - stroke_weight, 
+            corner_radius, stroke=1, fill=0)
+            
+            x = 6.3
+            y = 54
+            width = 17*35
+            height = 10*35.55
+            c.rect(x, y, width - stroke_weight, height - stroke_weight,  stroke=1, fill=0)
+            
+            #text sum block
+            try:
+                text_file_path = os.path.join(SUMMARY_FOLDER, f"sum_{i}.txt")
+                with open(text_file_path, "r") as file:
+                    text = file.read()
+                    
+                x, y = 30, 410  # Start position (from the top-left corner)
+                line_height = 23  # Space between lines #TODO not working
+                #max_line_width = 520  # Max width for wrapping text (e.g., 520 points)
+                font_name = "Inter"
+                font_size = 12
+
+                text_object = c.beginText(x, y)
+                text_object.setFont(font_name, font_size)
+                
+                # Process each line of data
+                temp =750
+                ll=[]
+
+                render_text = self.parse_markdown(text)
+
+                for line in render_text:
+                    text_object.setLeading(line_height)  # Line spacing
+                    if line.strip() == "":  # Handle empty lines (blank lines)
+                        text_object.textLine("")  # Add a blank line
+                        temp -= line_height
+                        continue
+                    
+                    # Use a regex to find bold substrings (text between **)
+                    if ("**") in line:
+                        parts = re.split(r'(\*\*.*?\*\*)', line)
+                        ll.append(parts)
+
+                    #if line.startswith("**") and line.endswith("**"):  # Bold detection
+                    if line.startswith("**") and line.endswith("**"):  # Bold detection
+                        text_object.setFont("InterBd", font_size)  # Set bold font
+                        line = line.strip("**")  # Remove bold markers
+                    else:
+                        line = line.strip("**")  # Remove bold markers
+                        text_object.setFont(font_name, font_size)  # Regular font
+
+                    # Wrap text to fit within max line width
+                    wrapped_lines = wrap(line, width=93)  # Wrap text to 90 characters, or adjust as necessary
+
+                    for wrapped_line in wrapped_lines:
+                        #print(temp)
+                        wrapped_line_c = ''
+                        if "**" in wrapped_line:
+                            for c in wrapped_line:
+                                if c == "*":
+                                    pass
+                                else:
+                                    wrapped_line_c +=c
+
+                            wrapped_line = wrapped_line_c
+                        if temp - line_height < 30:  # If text exceeds the page height, create a new page
+                            c.drawText(text_object)  # Draw current text before creating a new page
+
+                            c.showPage()  # Start a new page
+                            #y = page_height - 50  # Reset Y to top of the new page
+                            y = 40
+                            temp =750
+                            text_object = c.beginText(x, y)  # Create a new text block on the new page
+                            text_object.setFont(font_name, font_size) #TODO potential bug if line bold but begin next page can be common
+                            text_object.setLeading(line_height)  # Reset line spacing
+
+                        # Add the wrapped line to the text object
+                        #text_object.textLine(f'\u2022 {wrapped_line}')  #TODO here can split line for **
+
+                        if wrapped_line.startswith('-') or wrapped_line.startswith('1.') or wrapped_line.startswith('2.') or wrapped_line.startswith('3.') or \
+                            wrapped_line.startswith('4.') or wrapped_line.startswith('5.') or wrapped_line.startswith('6.') or wrapped_line.startswith('7.') \
+                                or wrapped_line.startswith('8.') or wrapped_line.startswith('9.'):
+
+                            skip = False
+                            for v, char in enumerate(wrapped_line):
+                                # Check if the current character and the next one form a pattern like "8."
+                                if char.isdigit() and v + 1 < len(wrapped_line) and wrapped_line[v + 1] == '.':
+                                    skip = True
+                                    continue
+                                elif skip:
+                                    # Skip the dot following the number
+                                    skip = False
+                                    continue
+                                elif char == '-':
+                                    pass
+                                else:
+                                    wrapped_line_c += char
+
+                            text_object.textLine('\n')
+                            wrapped_line ='  ' + '\u2022 ' + wrapped_line_c
+                            
+                        else:
+                            for v, char in enumerate(wrapped_line):
+                                # Check if the current character and the next one form a pattern like "8."
+                                    wrapped_line_c += char
+
+
+                            wrapped_line = wrapped_line_c
+                        text_object.textLine(f'{wrapped_line}')  
+                        #text_object.textLine('\n')  
+                        temp -= line_height  # Move to the next line
+
+                # Draw the text on the canvas
+                c.drawText(text_object)
+
+                self.footer(c,i-1)
+                c.showPage()
+            except Exception as e:
+                logger.warning(f"Error adding text from {text_file_path}: {e}. Using fallback text.")
+                with open(extra_text_path, "r") as file:
+                    text = file.read()
+                x, y = 30, 410  # Start position (from the top-left corner)
+                line_height = 23  # Space between lines #TODO not working
+                #max_line_width = 520  # Max width for wrapping text (e.g., 520 points)
+                font_name = "Inter"
+                font_size = 12
+
+                text_object = c.beginText(x, y)
+                text_object.setFont(font_name, font_size)
+                wrapped_lines = wrap(text, width=93)
+                for wrapped_line in wrapped_lines:
+                    text_object.textLine(f'{wrapped_line}') 
+                c.drawText(text_object)
+
+                self.footer(c,i-1)
+                c.showPage()
+        
+
+    def create_pdf(self):
+        """Generate the PDF."""
+        pdf_folder = f"FastApi/src/pdfs/{self.user_folder}"
+        file_path = 'FastApi/src/final_gen.txt'
+        user_folder = 'temp'
+        os.makedirs(pdf_folder, exist_ok=True)
+
+        pdf_path = os.path.join(pdf_folder, f"{self.pdf_file_name}.pdf")
+        c = canvas.Canvas(pdf_path, pagesize=self.page_size, bottomup=0)
+        #c.translate(0, c._pagesize[1])
+
+        
+        # Add content
+        self.add_viz_and_summary(c, user_folder=self.user_folder)
+        self.add_data_analytic(c,file_path)
+        self.add_improve_suggestions(c,file_path)
+
+        
+        # Save the PDF
+        c.save()
         return pdf_path
-# Usage example
-#pdf = PDF(start_page_num=1, formated_file_name="GNGR_20240504 .xlsx", user_folder='0597d292-a72a-11ef-896f-70665514def7')
+
+# Usage Example
+#pdf = PDFReport(start_page_num=1, pdf_file_name="Report_20240505.xlsx")
 #pdf.create_pdf()
+#
