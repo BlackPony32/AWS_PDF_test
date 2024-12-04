@@ -201,7 +201,7 @@ class PDFReport:
 
     def add_data_analytic(self, c, file_path):
         self.header(c)
-        from markdown import markdown
+        #from markdown import markdown
         x, y = 20, 90  # Start from the top of the page
         textobject = c.beginText(x, y)
         textobject.setFont('Inter', 12)
