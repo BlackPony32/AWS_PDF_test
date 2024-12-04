@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from starlette.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import BackgroundTasks
+from fastapi.responses import PlainTextResponse
 import pandas as pd
 import os
 import logging
@@ -187,6 +188,26 @@ async def download_pdf(pdf_url: str, user_folder: str, background_tasks: Backgro
     background_tasks.add_task(clean_directories, user_folder)
 
     return FileResponse(file_path, media_type='application/pdf', filename=filename)
+
+@app.get("/logs/last/{num_lines}", response_class=PlainTextResponse)
+async def get_last_n_log_lines(num_lines: int):
+    try:
+        # Open and read the log file
+        LOG_FILE = "preprocess_log.log"
+        with open(LOG_FILE, "r") as file:
+            lines = file.readlines()
+
+        if not lines:
+            raise HTTPException(status_code=404, detail="Log file is empty.")
+
+        # Get the last `num_lines` lines
+        last_lines = lines[-num_lines:]
+        return "".join(last_lines)
+
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Log file not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
