@@ -18,7 +18,7 @@ def extract_and_execute_code(file_path, user_folder):
         os.makedirs(plots_FOLDER)
     if not os.path.exists(summary_FOLDER):
         os.makedirs(summary_FOLDER)
-    
+
     try:
         new_lines = [
     f"user_folder = '{user_folder}'",

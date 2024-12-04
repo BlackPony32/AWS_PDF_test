@@ -21,12 +21,12 @@ import reportlab.rl_config
 reportlab.rl_config.warnOnMissingFontGlyphs = 0
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-pdfmetrics.registerFont(TTFont('Inter', 'fonts\Inter_18pt-Regular.ttf'))
-pdfmetrics.registerFont(TTFont('InterL', 'fonts\Inter_18pt-Light.ttf'))
-pdfmetrics.registerFont(TTFont('InterM', 'fonts\Inter_18pt-Medium.ttf'))
-pdfmetrics.registerFont(TTFont('InterBd', 'fonts\Inter_18pt-Bold.ttf'))
-pdfmetrics.registerFont(TTFont('InterIt', 'fonts\Inter_18pt-BlackItalic.ttf'))
-pdfmetrics.registerFont(TTFont('InterBI', 'fonts\Inter_18pt-BoldItalic.ttf'))
+pdfmetrics.registerFont(TTFont('Inter', 'fonts/Inter_18pt-Regular.ttf'))
+pdfmetrics.registerFont(TTFont('InterL', 'fonts/Inter_18pt-Light.ttf'))
+pdfmetrics.registerFont(TTFont('InterM', 'fonts/Inter_18pt-Medium.ttf'))
+pdfmetrics.registerFont(TTFont('InterBd', 'fonts/Inter_18pt-Bold.ttf'))
+pdfmetrics.registerFont(TTFont('InterIt', 'fonts/Inter_18pt-BlackItalic.ttf'))
+pdfmetrics.registerFont(TTFont('InterBI', 'fonts/Inter_18pt-BoldItalic.ttf'))
 
 class PDFReport:
     def __init__(self, start_page_num=1, pdf_file_name="File name", user_folder="temp", total_pages=8):

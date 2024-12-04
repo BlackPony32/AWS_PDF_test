@@ -1,4 +1,3 @@
-fpdf2
 docker
 markdown2
 openpyxl

@@ -32,7 +32,7 @@ pay attention to time periods if they are available, and to customers, sales if 
 - in block "Achievements and Suggestions for Growth" do not use numbering of paragraphs, only with a dash."""
         }
     )
-    
+
     return result
 
 def final_gen(file_path):
