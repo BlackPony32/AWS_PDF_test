@@ -13,8 +13,8 @@ kaleido==0.2.1
 openpyxl
 numpy
 aiofiles
-crewai==0.83.0
-crewai_tools==0.14.0
+crewai==0.76.2
+#crewai_tools==0.13.2
 python-multipart
 reportlab==4.2.5
 requests  # if Flask needs to communicate with FastAPI
