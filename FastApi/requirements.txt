@@ -14,7 +14,7 @@ pandas
 uvicorn
 numpy
 aiofiles
-crewai
-crewai_tools
+crewai==0.83.0
+crewai_tools==0.14.0
 python-multipart
 reportlab==4.2.5
