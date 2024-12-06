@@ -26,8 +26,9 @@ app = FastAPI()
 
 # Configure CORS
 origins = [
-    "http://localhost:5000",
-    "http://127.0.0.1:5000"
+    "http://localhost:5000",  # Local frontend during development
+    "http://127.0.0.1:5000",  # Alternative local URL
+    "https://simplydepo.better-website.com",  # Deployed frontend
 ]
 
 app.add_middleware(
