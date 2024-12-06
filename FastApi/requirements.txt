@@ -4,7 +4,7 @@ uvicorn==0.32.0
 
 # Data Processing and Visualization
 pandas==2.2.3
-numpy==2.1.1
+numpy==1.26.4
 plotly==5.3.1
 kaleido==0.2.1
 
