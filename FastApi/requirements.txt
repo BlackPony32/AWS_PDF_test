@@ -1,10 +1,10 @@
 # Frameworks and APIs
-fastapi
-uvicorn
+fastapi==0.115.5
+uvicorn==0.32.0
 
 # Data Processing and Visualization
-pandas
-numpy
+pandas==2.2.3
+numpy==2.1.1
 plotly==5.3.1
 kaleido==0.2.1
 
@@ -25,14 +25,13 @@ crewai==0.76.2
 
 # File Handling
 aiofiles==22.1.0
-python-multipart
+anyio==4.6.1
+python-multipart==0.0.17
 
-# Markdown
-markdown2
 
 # Docker
 docker
 
 # Transformers and Dependencies
 transformers==2.1.1
-sentencepiece
+sentencepiece==0.2.0
