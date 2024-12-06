@@ -4,10 +4,10 @@ from langchain_openai import ChatOpenAI
 import os
 #from t_custom_code_exec_tool import CLITool
 from . import code_executing_solution
-from crewai_tools import CodeInterpreterTool
+#from crewai_tools import CodeInterpreterTool
 from dotenv import load_dotenv
 load_dotenv()
-from crewai_tools import CSVSearchTool
+#from crewai_tools import CSVSearchTool
 import asyncio
 
 def AI_generation_plots_summary(_data_dict, user_folder):
@@ -20,7 +20,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
     if not os.path.exists(summary_FOLDER):
         os.makedirs(summary_FOLDER)
 
-    csv_tool = CSVSearchTool()
+    #csv_tool = CSVSearchTool()
     OpenAIGpt4 = ChatOpenAI(
         temperature=0,
         model='gpt-4o'
