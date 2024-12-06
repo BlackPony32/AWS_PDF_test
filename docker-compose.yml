@@ -2,22 +2,11 @@ version: '3.10'
 services:
   fastapi-app:
     build:
-      context: ./FastApi  # Make sure the context is the FastAPI folder
+      context: ./FastApi 
     command: sh -c "uvicorn main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
     volumes:
-      - .:/app  # Mount the whole project folder into the container
+      - .:/app 
     restart: always
 
-  flask-app:
-    build:
-      context: ./flask  # Path to the Flask folder containing Dockerfile
-    command: python app.py
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./flask:/app
-    restart: always
-    depends_on:
-      - fastapi-app
