@@ -107,6 +107,7 @@ async def upload_file(
     user_folder = user_uuid()
     #test
     data_dict = {"q1": q1, "q2": q2, "q3": q3, "q4": q4}
+    q4 = data_dict.get('q4')
     logger.info(f"got : {data_dict}")
     UPLOAD_FOLDER = f'FastApi/src/uploads/{user_folder}'
     PDF_FOLDER = f'FastApi/src/pdfs/{user_folder}'
@@ -149,7 +150,7 @@ async def upload_file(
         
         try:
             final_sum_folder = f"FastApi/src/uploads/{user_folder}/final_gen.txt"
-            await asyncio.to_thread(final_gen, f"FastApi/src/uploads/{user_folder}/{filename}", final_sum_folder)
+            await asyncio.to_thread(final_gen, f"FastApi/src/uploads/{user_folder}/{filename}", final_sum_folder, q4)
             logger.info("Data final summary generated")
         except Exception as e:
             logger.error(f"Data final summary generation error: {e}")

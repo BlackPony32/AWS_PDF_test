@@ -167,7 +167,7 @@ class PDFReport:
                 else:
                     line_low += v.lower()
 
-            wrapped_lines = wrap(line_low, width=77)
+            wrapped_lines = wrap(line_low, width=76)
             
             for wrapped_line in wrapped_lines:
                 #print(temp)
@@ -277,7 +277,7 @@ class PDFReport:
                 text_object.setFont(font_name, font_size)  # Regular font
 
             # Wrap text to fit within max line width
-            wrapped_lines = wrap(line, width=89)  # Wrap text to 90 characters, or adjust as necessary
+            wrapped_lines = wrap(line, width=86)  # Wrap text to 90 characters, or adjust as necessary
 
             for wrapped_line in wrapped_lines:
                 #print(temp)
@@ -437,9 +437,9 @@ class PDFReport:
         c.setStrokeColor(stroke_color)
 
         # Draw the rectangle with adjusted stroke weight
-        x = 365  # X-coordinate of the lower-left corner
+        x = 361  # X-coordinate of the lower-left corner
         y = 18.6  # Y-coordinate of the lower-left corner
-        width = 824/4 # Width of the rectangle
+        width = 848/4 # Width of the rectangle
         height = 122/4  # Height of the rectangle
         corner_radius = 5  # Corner radius
 
@@ -457,11 +457,11 @@ class PDFReport:
         
         c.setFont('InterBd',11)
         c.setFillColorRGB(0,0,0)
-        c.drawString(373,37, f"Analyzed report:")
+        c.drawString(368,37, f"Analyzed report:")
         
         c.setFont('Inter',11)
         c.setFillColorRGB(0,0,0)
-        c.drawString(469,37, f"{formated_file_name}")
+        c.drawString(462,37, f"{formated_file_name}")
 
     def footer(self, c, current_page):
         """Add footer to each page."""
@@ -702,6 +702,6 @@ class PDFReport:
         return pdf_path
 
 # Usage Example
-#pdf = PDFReport(start_page_num=1, pdf_file_name="GNGR_20240511RRRRRRRRRRRRRRRR  (2).xlsx", user_folder='be98f3e6-6839-4535-83d7-c6f3bfae4e28')
+#pdf = PDFReport(start_page_num=1, pdf_file_name="GNGR_20240511RR  3433.xlsx", user_folder='2f337933-4471-451c-81fe-82386553dfe8')
 #pdf.create_pdf()
 #
