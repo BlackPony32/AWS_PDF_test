@@ -35,7 +35,8 @@ def AI_generation_plots_summary(_data_dict, user_folder):
         backstory="""You're working with visual studio code with plotly go code.""",
         allow_delegation=False,
         memory=True,
-    	verbose=False
+    	verbose=False,
+        llm=OpenAIGpt4
     )
 
     #_______________________tasks block_________________________________________

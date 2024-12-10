@@ -148,10 +148,11 @@ async def upload_file(
             logger.error(f"Plot generation error: {e}")
         
         try:
-            await asyncio.to_thread(final_gen, f"FastApi/src/uploads/{user_folder}/{filename}")
-            logger.info("Data summary generated")
+            final_sum_folder = f"FastApi/src/uploads/{user_folder}/final_gen.txt"
+            await asyncio.to_thread(final_gen, f"FastApi/src/uploads/{user_folder}/{filename}", final_sum_folder)
+            logger.info("Data final summary generated")
         except Exception as e:
-            logger.error(f"Data summary generation error: {e}")
+            logger.error(f"Data final summary generation error: {e}")
         
         try:
             pdf = PDFReport(pdf_file_name=filename, user_folder=user_folder)

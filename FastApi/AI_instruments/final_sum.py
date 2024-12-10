@@ -21,23 +21,37 @@ def final_agent_gen(file_path):
     )
     result = agent_executor.invoke(
         {
-            "input": """Analyze my dataset according to the following rules:
-- Block named "Data Analysis" - 4 points - should be a detailed answer on data analysis -For example, the most valuable customer, the most profitable store or staff, etc.. 
-For example, the difference in product sales in different periods of time. The answer should be as detailed as possible.
-pay attention to time periods if they are available, and to customers, sales if data is available.
-- It should be a voluminous answer disclosing the data to the maximum!
--  Block named "Achievements and Suggestions for Growth" - (3 points) - based on the data obtained, there should be advice on how to improve the business
-- + point out the negative aspects (3 points) of the data, such as products that are not selling well or stores that are not bringing in enough product, etc.
-- answer should be only in txt format
-- in block "Achievements and Suggestions for Growth" do not use numbering of paragraphs, only with a dash."""
+            "input": """Analyze my dataset according to the following guidelines:
+
+"Data Analysis" Section (4 Points)
+
+Provide a detailed and comprehensive analysis of the dataset. Focus on identifying key insights, such as:
+The most valuable customer, the most profitable store or staff member, etc.
+Variations in product sales across different time periods (if time-related data is available).
+Significant trends or patterns in customer behavior, sales performance, or other relevant metrics.
+Pay particular attention to data on time periods, customers, and sales if they are part of the dataset.
+The analysis should be as thorough and detailed as possible, fully exploring the data.
+"Achievements and Suggestions for Growth" Section (3 Points)
+
+Based on the insights from the analysis, provide actionable advice on improving business performance.
+Highlight successful areas or achievements, such as top-performing products, stores, or strategies.
+Present your suggestions in a paragraph format with bullet points ("-"), not numbered lists.
+Negative Aspects (2 Points)
+
+Identify and discuss areas where the data shows room for improvement, such as:
+Products with low sales performance.
+Underperforming stores or staff.
+Other inefficiencies or challenges revealed by the data.
+Output Format: The response should be in plain text format, with clearly structured sections and no numbering in the "Achievements and Suggestions for Growth" section."""
         }
     )
 
     return result
 
-def final_gen(file_path):
+def final_gen(file_path, final_sum_folder):
     agent_answer = final_agent_gen(file_path) 
     final_answer = agent_answer.get("output")
-
-    with open('FastApi/src/final_gen.txt', 'w') as file:
+    #print(final_answer)
+    #print(final_sum_folder)
+    with open(final_sum_folder, 'x') as file:
         file.write(final_answer)

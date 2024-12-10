@@ -33,6 +33,7 @@ class PDFReport:
         self.start_page_num = start_page_num
         self.pdf_file_name = pdf_file_name
         self.user_folder = user_folder
+        self.original_page_name = pdf_file_name
         self.page_size = (210 * mm, 297 * mm)
         self.styles = getSampleStyleSheet()
         
@@ -142,9 +143,32 @@ class PDFReport:
                 line = line.strip("**")  # Remove bold markers
                 text_object.setFont(font_name, font_size)  # Regular font
 
-            # Wrap text to fit within max line width
-            wrapped_lines = wrap(line, width=76)  # Wrap text to 90 characters, or adjust as necessary
+            #test for capital letter check pasrsing
+            ## Wrap text to fit within max line width
+            #if sum(1 for char in line if char.isupper()) < 15:
+            #    wrapped_lines = wrap(line, width=79)
+            #elif sum(1 for char in line if char.isupper()) < 20:
+            #    wrapped_lines = wrap(line, width=75)
+            #elif sum(1 for char in line if char.isupper()) < 25:
+            #    wrapped_lines = wrap(line, width=70)
+            #elif sum(1 for char in line if char.isupper()) < 30:
+            #    wrapped_lines = wrap(line, width=63)
+            #else:
+            #    wrapped_lines = wrap(line, width=58)
+            
+            #make letter small for reduce border overlapping
 
+            cap_let = True
+            line_low =""
+            for i, v in enumerate(line):
+                if v.isalpha() and cap_let:
+                    cap_let = False
+                    line_low += v
+                else:
+                    line_low += v.lower()
+
+            wrapped_lines = wrap(line_low, width=77)
+            
             for wrapped_line in wrapped_lines:
                 #print(temp)
                 wrapped_line_c = ''
@@ -360,7 +384,18 @@ class PDFReport:
             paragraph.drawOn(c, 15, y_position)
             y_position -= paragraph.getHeight() + 5  # Move down for the next line
 
-        
+    def pdf_name(self, filename: str) -> str:
+        """Format filename for pdf"""
+        extensions = ['.csv', '.xlsx', '.xls']
+
+        for ext in extensions:
+            if filename.endswith(ext):
+                # Remove the matching extension
+                return filename[:-len(ext)]
+
+        # If no matching extension is found, return the filename as is
+        return filename
+
     def format_filename(self, filename: str) -> str:
         """Format filename based on extension."""
         extensions = ['.csv', '.xlsx', '.xls']
@@ -393,7 +428,7 @@ class PDFReport:
         c.restoreState()
 
         #file name block
-        formated_file_name = self.format_filename(self.pdf_file_name)
+        formated_file_name = self.format_filename(self.original_page_name)
         
         
         fill_color = HexColor("#ececec")  # 5% opacity to color #409A65 /  https://www.diversifyindia.in/rgba-to-hex-converter/
@@ -402,9 +437,9 @@ class PDFReport:
         c.setStrokeColor(stroke_color)
 
         # Draw the rectangle with adjusted stroke weight
-        x = 370  # X-coordinate of the lower-left corner
+        x = 365  # X-coordinate of the lower-left corner
         y = 18.6  # Y-coordinate of the lower-left corner
-        width = 818/4 # Width of the rectangle
+        width = 824/4 # Width of the rectangle
         height = 122/4  # Height of the rectangle
         corner_radius = 5  # Corner radius
 
@@ -422,11 +457,11 @@ class PDFReport:
         
         c.setFont('InterBd',11)
         c.setFillColorRGB(0,0,0)
-        c.drawString(378,37, f"Analyzed report:")
+        c.drawString(373,37, f"Analyzed report:")
         
         c.setFont('Inter',11)
         c.setFillColorRGB(0,0,0)
-        c.drawString(473,37, f"{formated_file_name}")
+        c.drawString(469,37, f"{formated_file_name}")
 
     def footer(self, c, current_page):
         """Add footer to each page."""
@@ -470,7 +505,7 @@ class PDFReport:
             c.saveState()
 
             c.scale(1,-1)
-            x_val = 17.5
+            x_val = 18.5
             y_val = -382
             #width = 196 * mm
             #height = 110*mm            
@@ -641,26 +676,32 @@ class PDFReport:
     def create_pdf(self):
         """Generate the PDF."""
         pdf_folder = f"FastApi/src/pdfs/{self.user_folder}"
-        file_path = 'FastApi/src/final_gen.txt'
+        file_path = f"FastApi/src/uploads/{self.user_folder}/final_gen.txt"
+        extra_file_path = f"FastApi/src/extra_final.txt"
         user_folder = 'temp'
         os.makedirs(pdf_folder, exist_ok=True)
 
-        pdf_path = os.path.join(pdf_folder, f"{self.pdf_file_name}.pdf")
+        pdf_name = self.pdf_name(self.pdf_file_name)
+
+        pdf_path = os.path.join(pdf_folder, f"{pdf_name}.pdf")
         c = canvas.Canvas(pdf_path, pagesize=self.page_size, bottomup=0)
         #c.translate(0, c._pagesize[1])
 
         
         # Add content
         self.add_viz_and_summary(c, user_folder=self.user_folder)
-        self.add_data_analytic(c,file_path)
-        self.add_improve_suggestions(c,file_path)
-
+        try:
+            self.add_data_analytic(c,file_path)
+            self.add_improve_suggestions(c,file_path)
+        except Exception as e:
+            self.add_data_analytic(c,extra_file_path)
+            self.add_improve_suggestions(c,extra_file_path)
         
         # Save the PDF
         c.save()
         return pdf_path
 
 # Usage Example
-#pdf = PDFReport(start_page_num=1, pdf_file_name="Report_20240505.xlsx")
+#pdf = PDFReport(start_page_num=1, pdf_file_name="GNGR_20240511RRRRRRRRRRRRRRRR  (2).xlsx", user_folder='be98f3e6-6839-4535-83d7-c6f3bfae4e28')
 #pdf.create_pdf()
 #
