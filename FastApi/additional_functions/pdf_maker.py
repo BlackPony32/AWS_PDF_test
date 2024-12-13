@@ -57,7 +57,7 @@ class PDFReport:
             joined_text = ''.join(lst).strip()
             final_list_text.append(joined_text)
         return final_list_text
-    def add_improve_suggestions(self, c, file_path, final_sum_path=1):
+    def add_improve_suggestions(self, c, file_path, plots_number):
         
         self.header(c)
 
@@ -220,10 +220,10 @@ class PDFReport:
         # Draw the text on the canvas
         c.drawText(text_object)
         
-        self.footer(c, 6)
+        self.footer(c, plots_number+2)
         c.showPage()
 
-    def add_data_analytic(self, c, file_path):
+    def add_data_analytic(self, c, file_path, plots_number):
         self.header(c)
         #from markdown import markdown
         x, y = 20, 90  # Start from the top of the page
@@ -331,7 +331,7 @@ class PDFReport:
         # Draw the text on the canvas
         c.drawText(text_object)
         
-        self.footer(c, 5) #+1
+        self.footer(c, plots_number +1)
         c.showPage()
     
     def extract_sections(self, file_path):
@@ -480,7 +480,7 @@ class PDFReport:
 
             # Page numbering at bottom-right corner
             c.setFont("InterL", 13)
-            c.drawRightString(573, 815, f"Page {current_page+1}")
+            c.drawRightString(573, 815, f"Page {current_page}")
 
         except Exception as e:
             print(f"in footer error: {e}")
@@ -498,180 +498,191 @@ class PDFReport:
         for folder in [UPLOAD_FOLDER, PDF_FOLDER, PLOTS_FOLDER, SUMMARY_FOLDER]:
             if not os.path.exists(folder):
                 os.makedirs(folder)
-                
-        for i in range(1,num_pages+1):
-            self.header(c)
-            
-            c.saveState()
-
-            c.scale(1,-1)
-            x_val = 18.5
-            y_val = -382
-            #width = 196 * mm
-            #height = 110*mm            
-            width = 16*35.55
-            height = 9*36.55
-            try:
-                plot_image_path = os.path.join(PLOTS_FOLDER, f"chart_{i}.png")
-                c.drawImage(ImageReader(plot_image_path), x_val, y_val, width=width, height=height, mask='auto')
-            except Exception as e:
-                logger.warning(f"Error adding plot {plot_image_path}: {e}. Using fallback image.")    
-                c.drawImage(ImageReader(extra_plot_path), x_val, y_val, width=width, height=height, mask='auto')
-            
-                
-            c.restoreState()
-            
-            stroke_color = HexColor("#FFFFFF")  # 100% opacity 
-            c.setStrokeColor(stroke_color)
-            
-            # Draw the rectangle with adjusted stroke weight
-            x, y= 8, 50
-
-            width = 17*34
-            height = 10*34.55
-            corner_radius = 12
-            # Increase border thickness
-            stroke_weight = 13  # Adjusted border thickness
-            c.setLineWidth(stroke_weight)
-            
-            # Adjust the rectangle size to simulate outside stroke
-            adjust = stroke_weight / 2
-            c.roundRect(x + adjust, y + adjust, width - stroke_weight, height - stroke_weight, 
-            corner_radius, stroke=1, fill=0)
-            
-            x = 6.3
-            y = 54
-            width = 17*35
-            height = 10*35.55
-            c.rect(x, y, width - stroke_weight, height - stroke_weight,  stroke=1, fill=0)
-            
-            #text sum block
-            try:
-                text_file_path = os.path.join(SUMMARY_FOLDER, f"sum_{i}.txt")
-                with open(text_file_path, "r") as file:
-                    text = file.read()
-                    
-                x, y = 30, 410  # Start position (from the top-left corner)
-                line_height = 23  # Space between lines #TODO not working
-                #max_line_width = 520  # Max width for wrapping text (e.g., 520 points)
-                font_name = "Inter"
-                font_size = 12
-
-                text_object = c.beginText(x, y)
-                text_object.setFont(font_name, font_size)
-                
-                # Process each line of data
-                temp =750
-                ll=[]
-
-                render_text = self.parse_markdown(text)
-
-                for line in render_text:
-                    text_object.setLeading(line_height)  # Line spacing
-                    if line.strip() == "":  # Handle empty lines (blank lines)
-                        text_object.textLine("")  # Add a blank line
-                        temp -= line_height
-                        continue
-                    
-                    # Use a regex to find bold substrings (text between **)
-                    if ("**") in line:
-                        parts = re.split(r'(\*\*.*?\*\*)', line)
-                        ll.append(parts)
-
-                    #if line.startswith("**") and line.endswith("**"):  # Bold detection
-                    if line.startswith("**") and line.endswith("**"):  # Bold detection
-                        text_object.setFont("InterBd", font_size)  # Set bold font
-                        line = line.strip("**")  # Remove bold markers
-                    else:
-                        line = line.strip("**")  # Remove bold markers
-                        text_object.setFont(font_name, font_size)  # Regular font
-
-                    # Wrap text to fit within max line width
-                    wrapped_lines = wrap(line, width=93)  # Wrap text to 90 characters, or adjust as necessary
-
-                    for wrapped_line in wrapped_lines:
-                        #print(temp)
-                        wrapped_line_c = ''
-                        if "**" in wrapped_line:
-                            for c in wrapped_line:
-                                if c == "*":
-                                    pass
-                                else:
-                                    wrapped_line_c +=c
-
-                            wrapped_line = wrapped_line_c
-                        if temp - line_height < 30:  # If text exceeds the page height, create a new page
-                            c.drawText(text_object)  # Draw current text before creating a new page
-
-                            c.showPage()  # Start a new page
-                            #y = page_height - 50  # Reset Y to top of the new page
-                            y = 40
-                            temp =750
-                            text_object = c.beginText(x, y)  # Create a new text block on the new page
-                            text_object.setFont(font_name, font_size) #TODO potential bug if line bold but begin next page can be common
-                            text_object.setLeading(line_height)  # Reset line spacing
-
-                        # Add the wrapped line to the text object
-                        #text_object.textLine(f'\u2022 {wrapped_line}')  #TODO here can split line for **
-
-                        if wrapped_line.startswith('-') or wrapped_line.startswith('1.') or wrapped_line.startswith('2.') or wrapped_line.startswith('3.') or \
-                            wrapped_line.startswith('4.') or wrapped_line.startswith('5.') or wrapped_line.startswith('6.') or wrapped_line.startswith('7.') \
-                                or wrapped_line.startswith('8.') or wrapped_line.startswith('9.'):
-
-                            skip = False
-                            for v, char in enumerate(wrapped_line):
-                                # Check if the current character and the next one form a pattern like "8."
-                                if char.isdigit() and v + 1 < len(wrapped_line) and wrapped_line[v + 1] == '.':
-                                    skip = True
-                                    continue
-                                elif skip:
-                                    # Skip the dot following the number
-                                    skip = False
-                                    continue
-                                elif char == '-':
-                                    pass
-                                else:
-                                    wrapped_line_c += char
-
-                            text_object.textLine('\n')
-                            wrapped_line ='  ' + '\u2022 ' + wrapped_line_c
-                            
-                        else:
-                            for v, char in enumerate(wrapped_line):
-                                # Check if the current character and the next one form a pattern like "8."
-                                    wrapped_line_c += char
-
-
-                            wrapped_line = wrapped_line_c
-                        text_object.textLine(f'{wrapped_line}')  
-                        #text_object.textLine('\n')  
-                        temp -= line_height  # Move to the next line
-
-                # Draw the text on the canvas
-                c.drawText(text_object)
-
-                self.footer(c,i-1)
-                c.showPage()
-            except Exception as e:
-                logger.warning(f"Error adding text from {text_file_path}: {e}. Using fallback text.")
-                with open(extra_text_path, "r") as file:
-                    text = file.read()
-                x, y = 30, 410  # Start position (from the top-left corner)
-                line_height = 23  # Space between lines #TODO not working
-                #max_line_width = 520  # Max width for wrapping text (e.g., 520 points)
-                font_name = "Inter"
-                font_size = 12
-
-                text_object = c.beginText(x, y)
-                text_object.setFont(font_name, font_size)
-                wrapped_lines = wrap(text, width=93)
-                for wrapped_line in wrapped_lines:
-                    text_object.textLine(f'{wrapped_line}') 
-                c.drawText(text_object)
-
-                self.footer(c,i-1)
-                c.showPage()
         
+        
+        current_iteration = 1
+        photo_counter = 1
+        page_nu = 1
+        while current_iteration <= 10:        
+            plot_image_path = os.path.join(PLOTS_FOLDER, f"chart_{photo_counter}.png")
+            
+            if os.path.exists(plot_image_path):
+                self.header(c)
+                c.saveState()
+
+                c.scale(1,-1)
+                x_val = 18.5
+                y_val = -387
+                #width = 196 * mm
+                #height = 110*mm            
+                width = 16*35.55
+                height = 9*36.55
+                try:
+                    plot_image_path = os.path.join(PLOTS_FOLDER, f"chart_{photo_counter}.png")
+                    c.drawImage(ImageReader(plot_image_path), x_val, y_val, width=width, height=height, mask='auto')
+                except Exception as e:
+                    logger.warning(f"Error adding plot {plot_image_path}: {e}. Using fallback image.")    
+                    #c.drawImage(ImageReader(extra_plot_path), x_val, y_val, width=width, height=height, mask='auto')
+
+
+                c.restoreState()
+
+                stroke_color = HexColor("#FFFFFF")  # 100% opacity 
+                c.setStrokeColor(stroke_color)
+
+                # Draw the rectangle with adjusted stroke weight
+                x, y= 8, 50
+
+                width = 17*34
+                height = 10*34.55
+                corner_radius = 12
+                # Increase border thickness
+                stroke_weight = 13  # Adjusted border thickness
+                c.setLineWidth(stroke_weight)
+
+                # Adjust the rectangle size to simulate outside stroke
+                adjust = stroke_weight / 2
+                c.roundRect(x + adjust, y + adjust, width - stroke_weight, height - stroke_weight, 
+                corner_radius, stroke=1, fill=0)
+
+                x = 6.3
+                y = 54
+                width = 17*35
+                height = 10*35.55
+                c.rect(x, y, width - stroke_weight, height - stroke_weight,  stroke=1, fill=0)
+
+                #text sum block
+                try:
+                    text_file_path = os.path.join(SUMMARY_FOLDER, f"sum_{photo_counter}.txt")
+                    with open(text_file_path, "r") as file:
+                        text = file.read()
+
+                    x, y = 30, 410  # Start position (from the top-left corner)
+                    line_height = 23  # Space between lines #TODO not working
+                    #max_line_width = 520  # Max width for wrapping text (e.g., 520 points)
+                    font_name = "Inter"
+                    font_size = 12
+
+                    text_object = c.beginText(x, y)
+                    text_object.setFont(font_name, font_size)
+
+                    # Process each line of data
+                    temp =750
+                    ll=[]
+
+                    render_text = self.parse_markdown(text)
+
+                    for line in render_text:
+                        text_object.setLeading(line_height)  # Line spacing
+                        if line.strip() == "":  # Handle empty lines (blank lines)
+                            text_object.textLine("")  # Add a blank line
+                            temp -= line_height
+                            continue
+                        
+                        # Use a regex to find bold substrings (text between **)
+                        if ("**") in line:
+                            parts = re.split(r'(\*\*.*?\*\*)', line)
+                            ll.append(parts)
+
+                        #if line.startswith("**") and line.endswith("**"):  # Bold detection
+                        if line.startswith("**") and line.endswith("**"):  # Bold detection
+                            text_object.setFont("InterBd", font_size)  # Set bold font
+                            line = line.strip("**")  # Remove bold markers
+                        else:
+                            line = line.strip("**")  # Remove bold markers
+                            text_object.setFont(font_name, font_size)  # Regular font
+
+                        # Wrap text to fit within max line width
+                        wrapped_lines = wrap(line, width=93)  # Wrap text to 90 characters, or adjust as necessary
+
+                        for wrapped_line in wrapped_lines:
+                            #print(temp)
+                            wrapped_line_c = ''
+                            if "**" in wrapped_line:
+                                for c in wrapped_line:
+                                    if c == "*":
+                                        pass
+                                    else:
+                                        wrapped_line_c +=c
+
+                                wrapped_line = wrapped_line_c
+                            if temp - line_height < 30:  # If text exceeds the page height, create a new page
+                                c.drawText(text_object)  # Draw current text before creating a new page
+
+                                c.showPage()  # Start a new page
+                                #y = page_height - 50  # Reset Y to top of the new page
+                                y = 40
+                                temp =750
+                                text_object = c.beginText(x, y)  # Create a new text block on the new page
+                                text_object.setFont(font_name, font_size) #TODO potential bug if line bold but begin next page can be common
+                                text_object.setLeading(line_height)  # Reset line spacing
+
+                            # Add the wrapped line to the text object
+                            #text_object.textLine(f'\u2022 {wrapped_line}')  #TODO here can split line for **
+
+                            if wrapped_line.startswith('-') or wrapped_line.startswith('1.') or wrapped_line.startswith('2.') or wrapped_line.startswith('3.') or \
+                                wrapped_line.startswith('4.') or wrapped_line.startswith('5.') or wrapped_line.startswith('6.') or wrapped_line.startswith('7.') \
+                                    or wrapped_line.startswith('8.') or wrapped_line.startswith('9.'):
+
+                                skip = False
+                                for v, char in enumerate(wrapped_line):
+                                    # Check if the current character and the next one form a pattern like "8."
+                                    if char.isdigit() and v + 1 < len(wrapped_line) and wrapped_line[v + 1] == '.':
+                                        skip = True
+                                        continue
+                                    elif skip:
+                                        # Skip the dot following the number
+                                        skip = False
+                                        continue
+                                    elif char == '-':
+                                        pass
+                                    else:
+                                        wrapped_line_c += char
+
+                                text_object.textLine('\n')
+                                wrapped_line ='  ' + '\u2022 ' + wrapped_line_c
+
+                            else:
+                                for v, char in enumerate(wrapped_line):
+                                    # Check if the current character and the next one form a pattern like "8."
+                                        wrapped_line_c += char
+
+
+                                wrapped_line = wrapped_line_c
+                            text_object.textLine(f'{wrapped_line}')  
+                            #text_object.textLine('\n')  
+                            temp -= line_height  # Move to the next line
+
+                    # Draw the text on the canvas
+                    c.drawText(text_object)
+
+                    self.footer(c,page_nu)
+                    page_nu += 1
+                    c.showPage()
+                except Exception as e:
+                    logger.warning(f"Error adding text from {text_file_path}: {e}. Using fallback text.")
+                    #with open(extra_text_path, "r") as file:
+                    #    text = file.read()
+                    #x, y = 30, 410  # Start position (from the top-left corner)
+                    #line_height = 23  # Space between lines #TODO not working
+                    ##max_line_width = 520  # Max width for wrapping text (e.g., 520 points)
+                    #font_name = "Inter"
+                    #font_size = 12
+#   
+                    #text_object = c.beginText(x, y)
+                    #text_object.setFont(font_name, font_size)
+                    #wrapped_lines = wrap(text, width=93)
+                    #for wrapped_line in wrapped_lines:
+                    #    text_object.textLine(f'{wrapped_line}') 
+                    #c.drawText(text_object)
+#   
+                    #self.footer(c,photo_counter)
+                    #c.showPage()
+            else:
+                pass
+                #print(f"{plot_image_path} does not exist, skipping.")
+            current_iteration+=1
+            photo_counter += 1
 
     def create_pdf(self):
         """Generate the PDF."""
@@ -687,12 +698,14 @@ class PDFReport:
         c = canvas.Canvas(pdf_path, pagesize=self.page_size, bottomup=0)
         #c.translate(0, c._pagesize[1])
 
-        
+        import fnmatch
+        dirpath = f"FastApi/src/plots/{self.user_folder}"
+        plots_number = len(fnmatch.filter(os.listdir(dirpath), '*.png'))
         # Add content
-        self.add_viz_and_summary(c, user_folder=self.user_folder)
+        self.add_viz_and_summary(c, user_folder=self.user_folder, num_pages=plots_number)
         try:
-            self.add_data_analytic(c,file_path)
-            self.add_improve_suggestions(c,file_path)
+            self.add_data_analytic(c,file_path, plots_number)
+            self.add_improve_suggestions(c,file_path, plots_number)
         except Exception as e:
             self.add_data_analytic(c,extra_file_path)
             self.add_improve_suggestions(c,extra_file_path)
@@ -702,6 +715,6 @@ class PDFReport:
         return pdf_path
 
 # Usage Example
-#pdf = PDFReport(start_page_num=1, pdf_file_name="GNGR_20240511RR  3433.xlsx", user_folder='2f337933-4471-451c-81fe-82386553dfe8')
+#pdf = PDFReport(start_page_num=1, pdf_file_name="GNGR_20240511  (2).csv", user_folder='1d01165b-1102-4609-b876-db31a6c15dbf')
 #pdf.create_pdf()
 #

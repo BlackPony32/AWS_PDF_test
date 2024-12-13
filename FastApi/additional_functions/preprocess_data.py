@@ -63,6 +63,26 @@ def preprocess_data(file_path, user_folder):
         if len(original_columns) != len(df.columns):
             actions_performed.append(f"Removed duplicate columns. Columns reduced from {len(original_columns)} to {len(df.columns)}")
 
+        #test type preprocessing
+        column_type_mapping = {
+            "Customer ID": str,  # Convert to string
+            "Product ID": str,   # Convert to string
+            "sales": float,
+            "Customer": str,
+            "ITEM": str,
+            "ZIP": str,
+            "item code": str
+        }
+        try:
+            for column, dtype in column_type_mapping.items():
+                if column in df.columns:
+                    df[column] = df[column].astype(str).str.rstrip(".0")
+                    #print(df[column])
+            # Preprocess the data
+            df.drop(columns=['ITEM'], inplace=True)
+        
+        except Exception  as e:
+            logging.error(f"Error during preprocessing type: {e}")
         # Save the cleaned data to a new CSV file
         cleaned_file_path = f'FastApi/src/uploads/{user_folder}/cleaned_data.csv'
         df.to_csv(cleaned_file_path, index=False)
@@ -77,4 +97,4 @@ def preprocess_data(file_path, user_folder):
         logging.error(f"Error during preprocessing: {e}")
         raise ValueError(f"Error during preprocessing: {e}")
 
-#preprocess_data("uploads\GNGR_20240420 .csv")
+#preprocess_data(r"FastApi\\src\uploads\\5c6ccb33-da82-454d-8767-a2cff0116263\\HCF Calculate GE Sales 20240930 (1).csv",'5c6ccb33-da82-454d-8767-a2cff0116263')

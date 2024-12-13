@@ -16,6 +16,7 @@ import aiofiles
 #from FastApi.additional_functions.pdf_maker import generate_pdf
 from FastApi.additional_functions.pdf_maker import PDFReport
 from FastApi.additional_functions.preprocess_data import preprocess_data
+from FastApi.additional_functions.preprocced_func import check_map_columns
 from FastApi.AI_instruments.one_agent_main import AI_generation_plots_summary
 from FastApi.AI_instruments.final_sum import final_gen
 from pathlib import Path
@@ -118,6 +119,7 @@ async def upload_file(
         logger.error("Invalid file format uploaded.")
         raise HTTPException(status_code=400, detail="Invalid file format. Only CSV, XLSX, and XLS are allowed.")
 
+    real_name = file.filename
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
     async with aiofiles.open(file_path, "wb") as buffer:
         content = await file.read()
@@ -135,6 +137,7 @@ async def upload_file(
     try:
         path = Path(file_path)
         filename = path.name
+        page_numb = 5
         action = await asyncio.to_thread(preprocess_data, path, user_folder)
         logger.info(f"Data preprocessing for file: {filename} finished")
 
@@ -143,7 +146,14 @@ async def upload_file(
         data_dict = await asyncio.to_thread(extract_main_info, _df)
 
         try:
-            await asyncio.to_thread(AI_generation_plots_summary, data_dict, user_folder)
+            result = await asyncio.to_thread(check_map_columns, user_folder)
+            if result:
+                page_numb = 4
+        except Exception as e:
+            logger.error(f"Preprocced plot generation error: {e}")
+
+        try:
+            await asyncio.to_thread(AI_generation_plots_summary, data_dict, user_folder, page_numb)
             logger.info("Plot generation completed")
         except Exception as e:
             logger.error(f"Plot generation error: {e}")
@@ -156,7 +166,7 @@ async def upload_file(
             logger.error(f"Data final summary generation error: {e}")
         
         try:
-            pdf = PDFReport(pdf_file_name=filename, user_folder=user_folder)
+            pdf = PDFReport(pdf_file_name=real_name, user_folder=user_folder)
             pdf_path = await asyncio.to_thread(pdf.create_pdf) 
             logger.info(f"Generated PDF at {pdf_path}")
         except Exception as e:

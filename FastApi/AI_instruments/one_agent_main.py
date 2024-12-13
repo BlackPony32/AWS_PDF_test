@@ -10,7 +10,7 @@ load_dotenv()
 #from crewai_tools import CSVSearchTool
 import asyncio
 
-def AI_generation_plots_summary(_data_dict, user_folder):
+def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
     plots_FOLDER = f'FastApi/src/plots/{user_folder}'
     summary_FOLDER = f'FastApi/src/summary/{user_folder}'
 
@@ -68,7 +68,6 @@ def AI_generation_plots_summary(_data_dict, user_folder):
                         Write code using Plotly GO, each in a standalone function named as task_n_visualization(df).
                         Each function should:
                         -don't use pie or donut charts in your visualizations - instead, use 'horizontal bars' with full labeling of visualizations.
-                        -An array of visualizations that would be great to use: Marimekko Chart, map visualizations (if addresses are present), Color Palette for Bar Chart
                         -Create an informative visualization, and each visualization style can use only one time (e.g.,one bar graph,one line etc.).
                         -solid #F5F5F5 plot background without grid lines (xaxis_showgrid=False, yaxis_showgrid=False)
                         -Include a summary (1500+ characters) explaining the visual insights and relevant business observations.
@@ -177,7 +176,7 @@ def AI_generation_plots_summary(_data_dict, user_folder):
         'plots_dir': f"FastApi/src/plots/{user_folder}",
         'sum_dir': f"FastApi/src/summary/{user_folder}",
         'data_path': f'FastApi/src/uploads/{user_folder}/cleaned_data.csv',
-        'tasks_for_data_num' : 5,
+        'tasks_for_data_num' : page_numb,
         'head': str(head),  # First 5 rows of the dataframe as a dictionary
         'describe':str(describe),  # Descriptive statistics of all columns
         'info': str(info),  # DataFrame info as a string
