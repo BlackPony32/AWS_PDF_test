@@ -56,7 +56,7 @@ def load_dataframe(user_folder='test', file_name="cleaned_data.csv"):
     Attempts to load a DataFrame from a CSV file using multiple encodings.
     Returns the loaded DataFrame or raises an exception on failure.
     """
-    file_path = os.path.join(f"FastApi\\src\\uploads\\{user_folder}\\{file_name}")
+    file_path = os.path.join(f"FastApi/src/uploads/{user_folder}/{file_name}")
     encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
 
     for encoding in encodings:
