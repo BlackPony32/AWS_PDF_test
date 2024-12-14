@@ -277,7 +277,16 @@ class PDFReport:
                 text_object.setFont(font_name, font_size)  # Regular font
 
             # Wrap text to fit within max line width
-            wrapped_lines = wrap(line, width=86)  # Wrap text to 90 characters, or adjust as necessary
+            cap_let = True
+            line_low =""
+            for i, v in enumerate(line):
+                if v.isalpha() and cap_let:
+                    cap_let = False
+                    line_low += v
+                else:
+                    line_low += v.lower()
+            
+            wrapped_lines = wrap(line_low, width=91)  # Wrap text to 90 characters, or adjust as necessary
 
             for wrapped_line in wrapped_lines:
                 #print(temp)
