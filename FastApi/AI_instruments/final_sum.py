@@ -31,7 +31,7 @@ Output Format: The response should be in plain text format, with clearly structu
     
     elif ai_task == 'negative_trends':
         prompt = """Analyze my dataset according to the following guidelines:
-
+the two sections must have identical names, namely:
 "Data Analysis" Section (4 Points)
 
 Provide a detailed and comprehensive analysis of the dataset. Focus on identifying key insights, such as:
@@ -85,7 +85,7 @@ Output Format: The response should be in plain text format, with clearly structu
         llm,
         df,
         agent_type="tool-calling",
-        verbose=False,
+        verbose=True,
         allow_dangerous_code=True
     )
     result = agent_executor.invoke(
