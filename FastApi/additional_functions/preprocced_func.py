@@ -2,7 +2,8 @@ import plotly.graph_objects as go
 import os
 import pandas as pd
 zip_cache={}
-
+import logging
+logger = logging.getLogger(__name__)
 def get_state_by_zip(zip_code):
     import pandas as pd
     import pgeocode
@@ -58,7 +59,7 @@ def load_dataframe(user_folder='test', file_name="cleaned_data.csv"):
     """
     file_path = os.path.join(f"FastApi/src/uploads/{user_folder}/{file_name}")
     encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
-
+    
     for encoding in encodings:
         try:
             return pd.read_csv(file_path, encoding=encoding, low_memory=False)
@@ -159,16 +160,18 @@ def check_map_columns(user_folder, file_name="cleaned_data.csv"):
     #df = df.copy()
     
     #print(df.columns)
-    PLOTS_DIR = f'FastApi\\src\\plots\\{user_folder}'
-    SUMMARY_DIR = f'FastApi\\src\\summary\\{user_folder}'
+    PLOTS_DIR = f'FastApi/src/plots/{user_folder}'
+    SUMMARY_DIR = f'FastApi/src/summary/{user_folder}'
     if "STATE" in df.columns:
         visualize_total_cases_by_state(df, PLOTS_DIR, SUMMARY_DIR)
         df.drop(['STATE',"ZIP"], axis=1, inplace=True)
+        logger.info(f"Map plot created: {user_folder} by state")
         return True
     elif "ZIP" in df.columns:
         unique_zips = df['ZIP'].unique()
         print(unique_zips)
         # Perform the lookup only once for unique ZIP codes
+        logger.info(f"Map plot created: {user_folder} by zip")
         results = {zip_code: get_state_by_zip(zip_code) for zip_code in unique_zips}
         # Map the results back to the DataFrame
         df['STATE'] = df['ZIP'].map(results)
