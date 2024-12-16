@@ -406,19 +406,17 @@ class PDFReport:
         return filename
 
     def format_filename(self, filename: str) -> str:
-        """Format filename based on extension."""
+        """Format filename by truncating the base name and removing the extension."""
         extensions = ['.csv', '.xlsx', '.xls']
         for ext in extensions:
             if filename.endswith(ext):
-                prefix_len, suffix_len = (7, 4) if ext == ".csv" else (6, 4)
                 base_name = filename[:-len(ext)]
-                if len(base_name) > 13:
-                    return f"{base_name[:prefix_len]}...{base_name[-suffix_len:]}{ext}"
+                if len(base_name) > 16:
+                    prefix_len, suffix_len = 9, 5  # Adjustable for truncation style
+                    return f"{base_name[:prefix_len]}...{base_name[-suffix_len:]}"
                 else:
-                    return filename.ljust(13)
-            else:
-                pass
-        return filename.ljust(13)
+                    return base_name  # No truncation needed
+        return filename
 
     def header(self, c):
         """Add the header to each page."""
