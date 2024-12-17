@@ -518,12 +518,12 @@ class PDFReport:
                 c.saveState()
 
                 c.scale(1,-1)
-                x_val = 18.5
-                y_val = -387
+                x_val = 20.5
+                y_val = -377
                 #width = 196 * mm
                 #height = 110*mm            
-                width = 16*35.55
-                height = 9*36.55
+                width  = 16*35 #width = 16*35.55
+                height =  9*35 #height = 9*36.55
                 try:
                     plot_image_path = os.path.join(PLOTS_FOLDER, f"chart_{photo_counter}.png")
                     c.drawImage(ImageReader(plot_image_path), x_val, y_val, width=width, height=height, mask='auto')
@@ -538,10 +538,10 @@ class PDFReport:
                 c.setStrokeColor(stroke_color)
 
                 # Draw the rectangle with adjusted stroke weight
-                x, y= 8, 50
+                x, y= 8, 55
 
                 width = 17*34
-                height = 10*34.55
+                height = 10*33.55
                 corner_radius = 12
                 # Increase border thickness
                 stroke_weight = 13  # Adjusted border thickness
