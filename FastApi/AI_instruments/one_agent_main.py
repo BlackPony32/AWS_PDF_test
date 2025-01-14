@@ -171,11 +171,16 @@ def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
     column_types = _data_dict.get("column_types")
     shape = _data_dict.get("shape")
 
+    data_path = f'FastApi/src/uploads/{user_folder}/AI_cleaned.csv'
+    if os.path.exists(data_path):
+        pass
+    else:
+        data_path = f'FastApi/src/uploads/{user_folder}/cleaned_data.csv'
     
     data_config ={
         'plots_dir': f"FastApi/src/plots/{user_folder}",
         'sum_dir': f"FastApi/src/summary/{user_folder}",
-        'data_path': f'FastApi/src/uploads/{user_folder}/cleaned_data.csv',
+        'data_path': data_path,
         'tasks_for_data_num' : page_numb,
         'head': str(head),  # First 5 rows of the dataframe as a dictionary
         'describe':str(describe),  # Descriptive statistics of all columns

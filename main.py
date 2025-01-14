@@ -15,6 +15,7 @@ import asyncio
 import aiofiles
 #from FastApi.additional_functions.pdf_maker import generate_pdf
 from FastApi.additional_functions.pdf_maker import PDFReport
+from FastApi.additional_functions.cleand_df import AI_drop_col_csv
 from FastApi.additional_functions.preprocess_data import preprocess_data
 from FastApi.additional_functions.preprocced_func import check_map_columns
 from FastApi.AI_instruments.one_agent_main import AI_generation_plots_summary
@@ -142,7 +143,22 @@ async def upload_file(
         logger.info(f"Data preprocessing for file: {filename} finished")
 
         cleaned_dataset_name = f"FastApi/src/uploads/{user_folder}/cleaned_data.csv"
-        _df = await asyncio.to_thread(pd.read_csv, cleaned_dataset_name, low_memory=False)
+        
+        try:
+            file_path_for_ai_cleaning = f"FastApi/src/uploads/{user_folder}/cleaned_data.csv"
+            path_for_drop_col_list = f"FastApi/src/uploads/{user_folder}/drop_col_list.txt"
+            df_path = f"FastApi/src/uploads/{user_folder}"
+            
+            create_ai_cleaned_df = await asyncio.to_thread(AI_drop_col_csv, file_path_for_ai_cleaning, df_path, path_for_drop_col_list)
+        except Exception as e:
+            logger.error(f"AI data cleaning error: {e}")
+        
+        try:
+            _df = await asyncio.to_thread(pd.read_csv, create_ai_cleaned_df, low_memory=False)
+        except Exception as e:
+            logger.error(f"AI data using error: {e}")
+            _df = await asyncio.to_thread(pd.read_csv, cleaned_dataset_name, low_memory=False)
+        
         data_dict = await asyncio.to_thread(extract_main_info, _df)
 
         try:
@@ -150,7 +166,7 @@ async def upload_file(
             if result:
                 page_numb = 4
         except Exception as e:
-            logger.error(f"Preprocced plot generation error: {e}")
+            logger.error(f"Preprocessed plot generation error: {e}")
 
         try:
             await asyncio.to_thread(AI_generation_plots_summary, data_dict, user_folder, page_numb)
