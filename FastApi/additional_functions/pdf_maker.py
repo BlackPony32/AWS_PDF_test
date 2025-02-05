@@ -41,22 +41,19 @@ class PDFReport:
         self.total_pages = total_pages
 
     def parse_markdown(self, markdown_text):
-        """This func get text from file, and return list of lines from it"""
-        text = []
+        """This func gets text from file and returns a list of lines."""
         lines = []
+        current_line = []
         for char in markdown_text:
             if char == '\n':
-                text.append(list(lines))
-                lines =[]
-                #print(1)
+                lines.append(''.join(current_line).strip())
+                current_line = []
             else:
-                lines.append(char)
-
-        final_list_text = []
-        for lst in text:
-            joined_text = ''.join(lst).strip()
-            final_list_text.append(joined_text)
-        return final_list_text
+                current_line.append(char)
+        # Add the last line if there's any remaining characters
+        if current_line:
+            lines.append(''.join(current_line).strip())
+        return lines
     def add_improve_suggestions(self, c, file_path, plots_number):
         
         self.header(c)
@@ -347,38 +344,29 @@ class PDFReport:
         """Extracts specific sections from the text file based on headings."""
         sections = {
             "Detailed Analysis": [],
-            "Achievements_Suggestions_Growth": []  #Achievements and Suggestions for Growth
+            "Achievements_Suggestions_Growth": []
         }
-
-        # Start with the in_analysis flag set to True
+    
         in_analysis = True
         in_suggestions = False
-
-
+    
         with open(file_path, "r") as file:
             for line in file:
-                #line = line.strip()
-
-                # Check for "Business Improvement Suggestions" (case insensitive)
+                line = line.rstrip('\n')  # Remove existing newline to control formatting
                 if "achievements and suggestions for growth" in line.lower():
                     in_analysis = False
                     in_suggestions = True
                     continue
                 
-
-                # Collect lines for the respective sections
                 if in_analysis:
                     sections["Detailed Analysis"].append(line)
-                    #sections["Detailed Analysis"].append('\n')
                 elif in_suggestions:
                     sections["Achievements_Suggestions_Growth"].append(line)
-                    sections["Achievements_Suggestions_Growth"].append('\n')
-
-
-        # Join the lines to form paragraphs
+    
+        # Join lines with a single newline to maintain paragraphs
         for key in sections:
-            sections[key] = " ".join(sections[key])
-
+            sections[key] = '\n'.join(sections[key])
+    
         return sections
 
     def add_section_to_page(self, c, section_title, extracted_sections):
@@ -418,21 +406,22 @@ class PDFReport:
                     return base_name  # No truncation needed
         return filename
 
-    def header(self, c):
+    def header(self, can):
         """Add the header to each page."""
-        c.saveState()
+        #print(type(c))
+        can.saveState()
         
         image_path = "SD logo white.png"
-        c.scale(1,-1)
+        can.scale(1,-1)
         x_val = 20
         y_val = -41
         width = 632/5
         height = 92/5
         try:
-            c.drawImage(ImageReader(image_path), x_val, y_val, width=width, height=height, mask='auto')
+            can.drawImage(ImageReader(image_path), x_val, y_val, width=width, height=height, mask='auto')
         except Exception as e:
             logging.warning(f'Error add logo: {e}')
-        c.restoreState()
+        can.restoreState()
 
         #file name block
         formated_file_name = self.format_filename(self.original_page_name)
@@ -440,8 +429,8 @@ class PDFReport:
         
         fill_color = HexColor("#ececec")  # 5% opacity to color #409A65 /  https://www.diversifyindia.in/rgba-to-hex-converter/
         stroke_color = HexColor("#ececec")  # 100% opacity
-        c.setFillColor(fill_color)
-        c.setStrokeColor(stroke_color)
+        can.setFillColor(fill_color)
+        can.setStrokeColor(stroke_color)
 
         # Draw the rectangle with adjusted stroke weight
         x = 361  # X-coordinate of the lower-left corner
@@ -453,22 +442,22 @@ class PDFReport:
 
         # Increase border thickness
         stroke_weight = 3  # Adjusted border thickness
-        c.setLineWidth(stroke_weight)
+        can.setLineWidth(stroke_weight)
         
         # Adjust the rectangle size to simulate outside stroke
         adjust = stroke_weight / 2
-        c.roundRect(x + adjust, y + adjust, width - stroke_weight, height - stroke_weight, 
+        can.roundRect(x + adjust, y + adjust, width - stroke_weight, height - stroke_weight, 
                     corner_radius, stroke=1, fill=1)
         
         
         
-        c.setFont('InterBd',11)
-        c.setFillColorRGB(0,0,0)
-        c.drawString(368,37, f"Analyzed report:")
-        
-        c.setFont('Inter',11)
-        c.setFillColorRGB(0,0,0)
-        c.drawString(462,37, f"{formated_file_name}")
+        can.setFont('InterBd',11)
+        can.setFillColorRGB(0,0,0)
+        can.drawString(368,37, f"Analyzed report:")
+    
+        can.setFont('Inter',11)
+        can.setFillColorRGB(0,0,0)
+        can.drawString(462,37, f"{formated_file_name}")
 
     def footer(self, c, current_page):
         """Add footer to each page."""
@@ -600,67 +589,53 @@ class PDFReport:
                             text_object.setFont(font_name, font_size)  # Regular font
 
                         # Wrap text to fit within max line width
-                        wrapped_lines = wrap(line, width=93)  # Wrap text to 90 characters, or adjust as necessary
-
-                        for wrapped_line in wrapped_lines:
-                            #print(temp)
-                            wrapped_line_c = ''
-                            if "**" in wrapped_line:
-                                for c in wrapped_line:
-                                    if c == "*":
-                                        pass
-                                    else:
-                                        wrapped_line_c +=c
-
-                                wrapped_line = wrapped_line_c
-                            if temp - line_height < 30:  # If text exceeds the page height, create a new page
-                                c.drawText(text_object)  # Draw current text before creating a new page
-
-                                c.showPage()  # Start a new page
-                                #y = page_height - 50  # Reset Y to top of the new page
-                                y = 40
-                                temp =750
-                                text_object = c.beginText(x, y)  # Create a new text block on the new page
-                                text_object.setFont(font_name, font_size) #TODO potential bug if line bold but begin next page can be common
-                                text_object.setLeading(line_height)  # Reset line spacing
-
-                            # Add the wrapped line to the text object
-                            #text_object.textLine(f'\u2022 {wrapped_line}')  #TODO here can split line for **
-
-                            if wrapped_line.startswith('-') or wrapped_line.startswith('1.') or wrapped_line.startswith('2.') or wrapped_line.startswith('3.') or \
-                                wrapped_line.startswith('4.') or wrapped_line.startswith('5.') or wrapped_line.startswith('6.') or wrapped_line.startswith('7.') \
-                                    or wrapped_line.startswith('8.') or wrapped_line.startswith('9.'):
-
-                                skip = False
-                                for v, char in enumerate(wrapped_line):
-                                    # Check if the current character and the next one form a pattern like "8."
-                                    if char.isdigit() and v + 1 < len(wrapped_line) and wrapped_line[v + 1] == '.':
-                                        skip = True
-                                        continue
-                                    elif skip:
-                                        # Skip the dot following the number
-                                        skip = False
-                                        continue
-                                    elif char == '-':
-                                        pass
-                                    else:
-                                        wrapped_line_c += char
-
-                                text_object.textLine('\n')
-                                wrapped_line ='  ' + '\u2022 ' + wrapped_line_c
-
+                        cap_let = True
+                        line_low = ""
+                        for iter, vq in enumerate(line):
+                            if vq.isalpha() and cap_let:
+                                cap_let = False
+                                line_low += vq
                             else:
-                                for v, char in enumerate(wrapped_line):
-                                    # Check if the current character and the next one form a pattern like "8."
-                                        wrapped_line_c += char
+                                line_low += vq.lower()
 
+                        # Wrap text to fit within max line width
+                        wrapped_lines = wrap(line_low, width=93)  # Wrap text to 90 characters, or adjust as necessary
+                        #print(wrapped_lines)
+                        # Inside the loop processing wrapped_lines:
+                        # Inside the loop processing wrapped_lines:
+                        bullet_points = []  # Track bullet points
+                        for wrapped_line in wrapped_lines:
+                            # Fix 1: Remove existing numbers and replace with bullet points
+                            if re.match(r'^\d+\.', wrapped_line):
+                                # Remove number prefix (e.g., "1. ") and replace with bullet
+                                wrapped_line = re.sub(r'^\d+\.\s*', '  \u2022 ', wrapped_line)
+                                bullet_points.append(wrapped_line)  # Track bullet points
 
-                                wrapped_line = wrapped_line_c
-                            text_object.textLine(f'{wrapped_line}')  
-                            #text_object.textLine('\n')  
-                            temp -= line_height  # Move to the next line
+                            # Fix 2: Clean up bold markers
+                            wrapped_line = wrapped_line.replace("**", "")
+
+                            # Fix 3: Handle hyphen bullets
+                            if wrapped_line.startswith('-'):
+                                wrapped_line = wrapped_line.replace('-', '\u2022', 1)
+                                bullet_points.append(wrapped_line)  # Track bullet points
+
+                            # Add an extra newline after each bullet point NOTE if needed
+                            #if wrapped_line.strip().startswith('\u2022'):
+                            #    text_object.textLine('\n')  # Add extra spacing after bullet points
+
+                            # Add processed line to text object
+                            text_object.textLine(wrapped_line.strip())
+
+                            
+
+                            temp -= line_height
+
+                        # Add extra spacing after the last bullet point
+                        if bullet_points:  # If there are bullet points
+                            text_object.textLine('\n')  # Add extra spacing after the last bullet point
 
                     # Draw the text on the canvas
+                    
                     c.drawText(text_object)
 
                     self.footer(c,page_nu)
@@ -676,15 +651,7 @@ class PDFReport:
                     #font_name = "Inter"
                     #font_size = 12
 #   
-                    #text_object = c.beginText(x, y)
-                    #text_object.setFont(font_name, font_size)
-                    #wrapped_lines = wrap(text, width=93)
-                    #for wrapped_line in wrapped_lines:
-                    #    text_object.textLine(f'{wrapped_line}') 
-                    #c.drawText(text_object)
-#   
-                    #self.footer(c,photo_counter)
-                    #c.showPage()
+
             else:
                 pass
                 #print(f"{plot_image_path} does not exist, skipping.")
@@ -721,7 +688,8 @@ class PDFReport:
         c.save()
         return pdf_path
 
-# Usage Example
-#pdf = PDFReport(start_page_num=1, pdf_file_name="GNGR_20240511  (2).csv", user_folder='1d01165b-1102-4609-b876-db31a6c15dbf')
+# Usage Example FastApi\src\pdfs\26578b78-3431-4af3-86a3-6102695d7dfc
+#cleaned_ideal1.csv to FastApi/src/uploads/adc8c58d-f712-446a-a23f-24ff77383466
+#pdf = PDFReport(start_page_num=1, pdf_file_name="try1", user_folder='26578b78-3431-4af3-86a3-6102695d7dfc')
 #pdf.create_pdf()
 #

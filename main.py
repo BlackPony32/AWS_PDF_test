@@ -1,4 +1,5 @@
 import shutil
+import re
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi import  Query
 from typing import Optional
@@ -24,6 +25,9 @@ from pathlib import Path
 from FastApi.additional_functions.dataset_main_info import extract_main_info
 from concurrent.futures import ThreadPoolExecutor
 
+from langchain_openai import ChatOpenAI
+from langchain_experimental.agents import create_pandas_dataframe_agent
+
 app = FastAPI()
 
 # Configure CORS
@@ -42,6 +46,9 @@ app.add_middleware(
 )
 
 # Configure logging to write to a file
+# Pricing rates (per 1,000 tokens)
+INPUT_COST_PER_1K_TOKENS = 0.0025  # for 1000 GPT-4о input
+OUTPUT_COST_PER_1K_TOKENS = 0.01  # for 1000 GPT-4о output
 log_file_path = "preprocess_log.log"
 logging.basicConfig(
     level=logging.INFO,
@@ -79,6 +86,7 @@ async def clean_directories(user_id):
     summary_folder = f'FastApi/src/summary/{user_id}'
     pdf_folder = f'FastApi/src/pdfs/{user_id}'
     uploads_folder = f'FastApi/src/uploads/{user_id}'
+    chat_folder = f'FastApi/src/files/{user_id}'
     loop = asyncio.get_event_loop()
 
     if os.path.exists(plots_folder):
@@ -89,6 +97,8 @@ async def clean_directories(user_id):
         await loop.run_in_executor(executor, shutil.rmtree, pdf_folder)
     if os.path.exists(uploads_folder):
         await loop.run_in_executor(executor, shutil.rmtree, uploads_folder)
+    if os.path.exists(chat_folder):
+        await loop.run_in_executor(executor, shutil.rmtree, chat_folder)
     logger.info(f"Deleted user folder: {user_id}")
 
 # Define a BaseModel for the JSON payload
@@ -142,7 +152,7 @@ async def upload_file(
         action = await asyncio.to_thread(preprocess_data, path, user_folder)
         logger.info(f"Data preprocessing for file: {filename} finished")
 
-        cleaned_dataset_name = f"FastApi/src/uploads/{user_folder}/cleaned_data.csv"
+        cleaned_dataset_name = f"FastApi/src/uploads/{user_folder}/cleaned_data.csv" #NOTE changed name if needed
         
         try:
             file_path_for_ai_cleaning = f"FastApi/src/uploads/{user_folder}/cleaned_data.csv"
@@ -237,6 +247,192 @@ async def get_last_n_log_lines(num_lines: int):
         raise HTTPException(status_code=404, detail="Log file not found.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+
+#______________AI chat block start______
+# Helper function to count tokens
+def count_tokens(text: str, model: str = "gpt-4o") -> int:
+    """Count the number of tokens in a text using tiktoken."""
+    encoding = tiktoken.encoding_for_model(model)
+    tokens = encoding.encode(text)
+    return len(tokens)
+
+# Helper function to calculate cost
+def calculate_cost(input_tokens: int, output_tokens: int) -> float:
+    """Calculate the cost of the request and response in dollars."""
+    input_cost = (input_tokens / 1000) * INPUT_COST_PER_1K_TOKENS
+    output_cost = (output_tokens / 1000) * OUTPUT_COST_PER_1K_TOKENS
+    total_cost = input_cost + output_cost
+    return total_cost
+
+
+import tiktoken
+
+# AI chat block
+async def chat_with_file(prompt: str, file_path: str):
+    # Try different encodings to read the CSV file
+    encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
+    for encoding in encodings:
+        try:
+            df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
+            break
+        except UnicodeDecodeError:
+            print(f"Failed decode with: {encoding}")
+    
+    try:
+        # Initialize the LLM
+        llm = ChatOpenAI(model="gpt-4o", temperature=0)
+        
+        # Create the agent
+        agent_executor = create_pandas_dataframe_agent(
+            llm,
+            df,
+            agent_type="tool-calling",
+            verbose=True,
+            allow_dangerous_code=True
+        )
+        
+        # Count input tokens
+        input_tokens = count_tokens(prompt)
+        
+        # Invoke the agent
+        result = agent_executor.invoke({"input": prompt})
+        
+        # Extract the output
+        output = result.get("output", "")
+        
+        # Count output tokens
+        output_tokens = count_tokens(output)
+        
+        # Calculate the cost
+        total_cost = calculate_cost(input_tokens, output_tokens)
+        
+        # Print the cost
+        print(f"Input tokens: {input_tokens}")
+        print(f"Output tokens: {output_tokens}")
+        print(f"Total cost: ${total_cost:.4f}")
+        
+        return {"output": output, "cost": total_cost}
+    
+    except Exception as e:
+        print("error executing llm:", e)
+        return {"output": "Can not answer on it", "cost": 0.0}
+
+# Pydantic models for request validation
+class ChatRequest(BaseModel):
+    prompt: str
+
+# Endpoint to start chat with AI
+@app.post('/chat_with_ai_start')
+async def chat_with_ai_start(file: UploadFile = File(...)):
+    # Data file transfer and processing
+    _user_uuid = user_uuid()
+    FILES_FOLDER = f'FastApi/src/files/{_user_uuid}'
+    os.makedirs(FILES_FOLDER, exist_ok=True)
+
+    if not file.filename.endswith(('.csv', '.xlsx', '.xls')):
+        logger.error("Invalid file format uploaded.")
+        raise HTTPException(status_code=400, detail="Invalid file format. Only CSV, XLSX, and XLS are allowed.")
+
+    real_name = file.filename
+    file_path = os.path.join(FILES_FOLDER, file.filename)
+    async with aiofiles.open(file_path, "wb") as buffer:
+        content = await file.read()
+        await buffer.write(content)
+        logger.info(f"Uploaded file {file.filename} for chat to {FILES_FOLDER}")
+
+    if file.filename.endswith(('.xlsx', '.xls')):
+        try:
+            file_path = await convert_excel_to_csv(file_path)
+            logger.info(f"Converted Excel to CSV and loaded file: {file.filename}")
+        except Exception as e:
+            logger.error(f"Error processing file: {e}")
+            raise HTTPException(status_code=500, detail="An error occurred while processing the file.")
+    
+    # Create a recommendation supporting questions
+    prompt = """
+        Thoroughly analyze the file you receive, and you need to identify the most useful recommendations for your business.
+        The result of the answer should be 4 questions that the user needs to ask the file.
+        - Do not answer them.
+        - The answer should be structured - only questions in the format of a Python dictionary. 
+        Example output:
+        ```python
+        {
+            "question_1": "What are the sales trends by channel and fulfillment?",
+            "question_2": "Which products or categories have high cancellations?",
+            "question_3": "How do shipping levels affect order status?",
+            "question_4": "Which regions drive revenue and demand?",
+        }```
+    """
+    
+    response = await chat_with_file(prompt, file_path)
+    answer = response.get('output')
+    
+    # Save the answer to a file
+    first_answer_file = f'FastApi/src/files/{_user_uuid}/answer.txt'
+    with open(first_answer_file, 'w') as file:
+        file.write(answer)
+    
+    # Extract questions from the answer
+    try:
+        with open(first_answer_file, 'r') as file:
+            content = file.read()
+        code_blocks = re.findall(r'```python(.*?)```', content, re.DOTALL)  # TODO: Add exception handling
+
+        if code_blocks:
+            answer_dict = eval(code_blocks[0].strip())  # Use `eval` only if the source is trusted
+        else:
+            answer_dict = {}
+    except Exception as e:
+        print("Error is", e)
+        answer_dict = {}
+    
+    # Extract questions from the dictionary
+    question_1 = answer_dict.get('question_1', "No question generated")
+    question_2 = answer_dict.get('question_2', "No question generated")
+    question_3 = answer_dict.get('question_3', "No question generated")
+    question_4 = answer_dict.get('question_4', "No question generated")
+    
+    return JSONResponse(content={
+        "message": "File processed successfully",
+        "user_uuid": _user_uuid,
+        "file_path": file_path,
+        "question_1": question_1,
+        "question_2": question_2,
+        "question_3": question_3,
+        "question_4": question_4
+    })
+
+# Endpoint to ask AI
+@app.post("/Ask_ai")
+async def ask_ai(request: ChatRequest, file_path: str):
+    prompt = request.prompt
+    system_prompt = f"""
+    Answer on my business question according to these rules:
+    - Answer should be well structured in text format,
+    - Do not use date visualization or write Python code in your answers,
+    - Keep your answers concise and well formatted,
+    The question is: {prompt}
+    """
+    
+    try:
+        response = await chat_with_file(system_prompt, file_path)
+        answer = response.get('output')
+        cost = response.get('cost', 0.0)
+    except Exception as e:
+        print("error executing llm:", e)
+        answer = "Can not answer on it"
+        cost = 0.0
+    
+    return {"response": answer, "prompt": prompt, "cost": cost}
+
+@app.get("/clean_chat/")
+async def download_pdf(user_folder: str, background_tasks: BackgroundTasks):
+    
+    # Schedule the cleanup task to run after the response is sent
+    background_tasks.add_task(clean_directories, user_folder)
+
+    return {"response": "Chat is cleaned successfully"}
 
 if __name__ == "__main__":
     import uvicorn

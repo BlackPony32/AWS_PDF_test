@@ -20,5 +20,6 @@ def extract_main_info(df: pd.DataFrame) -> dict:
     return data_summary
 
 # Example usage:
-#df = pd.read_csv('src/uploads/2024-09-30T12-51_export.csv')
+#df = pd.read_csv('FastApi/src/uploads/a2fc8600-e059-4c81-9dd6-bd2b467b32c2/AI_cleaned.csv')
 #summary = extract_main_info(df)
+#print(summary)

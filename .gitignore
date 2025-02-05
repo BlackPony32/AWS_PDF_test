@@ -16,5 +16,6 @@ db
 pdfs
 plots
 /test
+files
 uploads_many
 .pytest_cache

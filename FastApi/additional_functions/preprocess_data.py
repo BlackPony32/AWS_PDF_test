@@ -7,6 +7,56 @@ import os
 logging.basicConfig(filename='preprocess_log.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
+def sanitize_column_names_and_values(user_folder1:str, file_path: str, threshold: int = 32) -> pd.DataFrame:
+    """
+    Reads a CSV file, shortens column names and values, and dynamically shortens unique values 
+    for each column while ensuring a consistent format.
+
+    Args:
+        file_path (str): The path to the CSV file.
+        threshold (int): The maximum length allowed for column names and values. Default is 25.
+
+    Returns:
+        pd.DataFrame: The DataFrame with sanitized column names and values.
+    """
+    # Read the CSV file
+    df = pd.read_csv(file_path, index_col=0)
+
+    # Sanitize column names
+    def shorten_text(text, start_len=7, middle_start=10, middle_end=18, end_len=7):
+        if isinstance(text, str) and len(text) > threshold:
+            return f"{text[:start_len]}...{text[middle_start:middle_end]}...{text[-end_len:]}"
+        return text
+
+    df.columns = [shorten_text(col) for col in df.columns]
+
+    # Sanitize values
+    for col in df.columns:
+        value_dict = {}  # Dictionary to track unique values
+        start_len, middle_start, middle_end, end_len = 7, 11, 20, 9  # Initial formula
+
+        def process_value(value):
+            nonlocal start_len, middle_start, middle_end, end_len
+            if value not in value_dict:
+                if isinstance(value, str) and len(value) > threshold:
+                    shortened = f"{value[:start_len]}...{value[middle_start:middle_end]}...{value[-end_len:]}"
+                    value_dict[value] = shortened
+
+                    # Increment formula for the next unique value
+                    start_len += 1
+                    middle_start += 1
+                    middle_end += 1
+                    end_len += 1
+                else:
+                    value_dict[value] = value  # Keep original for short values
+            return value_dict[value]
+
+        df[col] = df[col].apply(process_value)
+
+    #cleaned_file_path = f'FastApi/src/uploads/{user_folder1}/AI_cleaned_f.csv' #NOTE if needed new df file
+    #df.to_csv(cleaned_file_path, index=False)
+    return df
+
 def preprocess_data(file_path, user_folder):
     """
     Preprocess the input CSV or Excel file:
@@ -83,6 +133,11 @@ def preprocess_data(file_path, user_folder):
         
         except Exception  as e:
             logging.error(f"Error during preprocessing type: {e}")
+            
+        try:
+            df = sanitize_column_names_and_values(user_folder, file_path)    
+        except Exception as e:
+            logging.error(f"Error during make shorter columns(value) names: {e}")
         # Save the cleaned data to a new CSV file
         cleaned_file_path = f'FastApi/src/uploads/{user_folder}/cleaned_data.csv'
         df.to_csv(cleaned_file_path, index=False)

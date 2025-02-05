@@ -4,11 +4,31 @@ from langchain_openai import ChatOpenAI
 import os
 #from t_custom_code_exec_tool import CLITool
 from . import code_executing_solution
+import tiktoken
 #from crewai_tools import CodeInterpreterTool
 from dotenv import load_dotenv
 load_dotenv()
+# Pricing rates (per 1,000 tokens)
+INPUT_COST_PER_1K_TOKENS = 0.003  # for 1000 GPT-4о input
+OUTPUT_COST_PER_1K_TOKENS = 0.012  # for 1000 GPT-4о output
 #from crewai_tools import CSVSearchTool
 import asyncio
+import logging
+log_file_path = "preprocess_log.log"
+logger = logging.getLogger(__name__)
+
+def count_tokens(text: str, model: str = "gpt-4o") -> int:
+    """Count the number of tokens in a text using tiktoken."""
+    encoding = tiktoken.encoding_for_model(model)
+    tokens = encoding.encode(text)
+    return len(tokens)
+
+def calculate_cost(input_tokens: int, output_tokens: int) -> float:
+    """Calculate the cost of the request and response in dollars."""
+    input_cost = (input_tokens / 1000) * INPUT_COST_PER_1K_TOKENS
+    output_cost = (output_tokens / 1000) * OUTPUT_COST_PER_1K_TOKENS
+    total_cost = input_cost + output_cost
+    return total_cost
 
 def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
     plots_FOLDER = f'FastApi/src/plots/{user_folder}'
@@ -23,7 +43,8 @@ def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
     #csv_tool = CSVSearchTool()
     OpenAIGpt4 = ChatOpenAI(
         temperature=0,
-        model='gpt-4o'
+        model='o1-mini'
+        #model='gpt-4o'
     )
 
     #______________________agents block__________________________________________
@@ -70,13 +91,13 @@ def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
                         -don't use pie or donut charts in your visualizations - instead, use 'horizontal bars' with full labeling of visualizations.
                         -Create an informative visualization, and each visualization style can use only one time (e.g.,one bar graph,one line etc.).
                         -solid #F5F5F5 plot background without grid lines (xaxis_showgrid=False, yaxis_showgrid=False)
-                        -Include a summary (1500+ characters) explaining the visual insights and relevant business observations.
+                        -Include a summary (500+ characters) explaining what is shown in the graph and relevant business observations.
                         Summary should teach how to read visualization + answer on these qustions:
                         1. What patterns or trends can be observed in the data?
                         2. Are there any outliers or unexpected values?
                         3. What factors might explain the main differences in the data?
                         -Show only top 15 data values if it many
-                        -Use unique colors for each chart, such as Light24.
+                        -Use unique colors for each chart, such as Light24 color palette per plot.
                         -Use fig.add_trace() to combine graphs if needed. (like bar sales and line data dependency for example)
                         -Save visualizations as PNG files in {plots_dir} (e.g., chart_n.png).
                         -Save each summary in {sum_dir} (e.g., sum_n.txt).
@@ -90,7 +111,7 @@ def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
                         and do not write any variable df ! only import lib, functions and call them
                         Code Example you should follow
                         -always write full code for all {tasks_for_data_num} functions and call it!
-                        A good code structure for one function:
+                        A good code structure for one function that good to follow:
 
                         import plotly.graph_objects as go
                         import plotly.express as px  # Import plotly.express for colors
@@ -100,43 +121,54 @@ def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
                                 if df is None:
                                     raise ValueError("Input DataFrame `df` is None. Please provide a valid DataFrame.")
 
-                                if 'Total Sales $' in df.columns and 'DocDate' in df.columns:
-                                    # Task 1: Time Series Analysis of Total Sales
-                                    sales_over_time = df.groupby('DocDate')['Total Sales $'].sum().reset_index()
-                                    fig = go.Figure()
-                                    fig.add_trace(go.Scatter(x=sales_over_time['DocDate'], y=sales_over_time['Total Sales $'],
-                                                              mode='lines+markers', name='Total Sales',
-                                                              line=dict(color=px.colors.qualitative.Light24[0])))
-                                    fig.update_layout(title='Total Sales Over Time',
-                                                      xaxis_title='Date',
-                                                      yaxis_title='Total Sales ($)',
-                                                      paper_bgcolor='rgba(245, 245, 245, 1)',
-                                                      plot_bgcolor='rgba(245, 245, 245, 1)',
-                                                      xaxis_showgrid=False,
-                                                      yaxis_showgrid=False)
+                                required_columns = ['MailCity', 'Total Sales $']
+                                for col in required_columns:
+                                    if col not in df.columns:
+                                        raise ValueError(f"Required column 'col' is missing from the DataFrame.")
 
-                                    plots_dir = '{plots_dir}'
-                                    if plots_dir is None:
-                                        raise ValueError("`plots_dir` is None. Please provide a valid directory path.")
-            
-                                    os.makedirs(plots_dir, exist_ok=True)
-                                    fig.write_image(f'{plots_dir}/chart_1.png')
+                                # Aggregate sales data by city
+                                sales_by_city = df.groupby('MailCity')['Total Sales $'].sum().reset_index()
+                                sales_by_city = sales_by_city.sort_values('Total Sales $', ascending=True).tail(15)
 
-                                    summary = ('''
-                                        This visualization analyzes the total sales over time, plotted as a time series. "
-                                        1. Patterns or Trends: The graph indicates fluctuations in total sales, with peaks and troughs corresponding to specific dates. A consistent increase indicates growing sales, while significant decreases might signify seasonal trends or external factors affecting sales performance.
-                                        2. Outliers: Any unusually high peaks in the graph signal exceptional sales days, perhaps owing to promotions or new product launches, while unexpected dips may warrant further investigation.
-                                        3. Explaining Differences: Various factors may contribute to these fluctuations, including marketing campaigns, holidays, or changes in consumer behavior. Identifying the reasons behind these trends can help in strategic planning.
-                                        '''
-                                    )
+                                # Format the sales values for display
+                                sales_by_city['Formatted Sales'] = sales_by_city['Total Sales $'].round(2)
 
-                                    sum_dir = '{sum_dir}'
-                                    if sum_dir is None:
-                                        raise ValueError("`sum_dir` is None. Please provide a valid directory path.")
-            
-                                    os.makedirs(sum_dir, exist_ok=True)
-                                    with open(f'{sum_dir}/sum_1.txt', 'w') as f:
-                                        f.write(summary)
+                                # Create the bar chart
+                                fig = go.Figure()
+                                fig.add_trace(go.Bar(
+                                    x=sales_by_city['Total Sales $'],
+                                    y=sales_by_city['MailCity'],
+                                    orientation='h',
+                                    marker=dict(color=px.colors.qualitative.Light24),
+                                    name='Total Sales',
+                                    text=sales_by_city['Formatted Sales'].astype(str)  # Use formatted sales for text
+                                ))
+
+                                # Update layout with descriptive labels
+                                fig.update_layout(
+                                    title='Top 15 Cities by Total Sales',
+                                    xaxis_title='Total Sales in USD',
+                                    yaxis_title='City Name',
+                                    paper_bgcolor='rgba(245, 245, 245, 1)',
+                                    plot_bgcolor='rgba(245, 245, 245, 1)',
+                                    xaxis_showgrid=False,
+                                    yaxis_showgrid=False
+                                )
+
+                                # Save the chart to a file
+                                os.makedirs(plots_dir, exist_ok=True)
+                                fig.write_image(os.path.join(plots_dir, 'chart_1.png'))
+
+                                summary = '''This horizontal bar chart highlights total sales distribution across the top 15 mail cities. Cities with longer bars indicate higher sales, reflecting strong market presence or demand.
+
+Trends: Identifies key sales hubs and geographical performance.
+Outliers: Highlights cities with unusually high or low sales, signaling market strengths or opportunities.
+Factors: Sales variations stem from population density, economic conditions, competition, and marketing efforts.
+Understanding these patterns helps optimize resource allocation, marketing strategies, and supply chain management.'''
+
+                                os.makedirs(sum_dir, exist_ok=True)
+                                with open(os.path.join(sum_dir, 'sum_1.txt'), 'w') as f:
+                                    f.write(summary.strip())
 
                             except Exception as e:
                                 print(f"An error occurred in task 1: e")
@@ -144,12 +176,13 @@ def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
 
                         task_1_visualization(df, sum_dir, plots_dir)
                         
+                        -Do not comment function calling. ALWAYS call written functions!
                         Output Requirements
                         The output code must be optimized, error-free, and focused on generating meaningful business insights through visualization.
                         """,
         expected_output= "Summary.txt file with full generated code for viz and summary.Repeat code as final answer.",
         #context = [context],
-        output_file = "Summary.txt",
+        output_file = f"FastApi/src/uploads/{user_folder}/Summary.txt",
         agent=planner,
         #tools = [csv_tool], #, t_custom_code_exec_tool.CLITool.execute_code
         async_execution = False
@@ -180,8 +213,8 @@ def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
     data_config ={
         'plots_dir': f"FastApi/src/plots/{user_folder}",
         'sum_dir': f"FastApi/src/summary/{user_folder}",
-        'data_path': data_path,
-        'tasks_for_data_num' : page_numb,
+        'data_path': str(data_path),
+        'tasks_for_data_num' : str(page_numb),
         'head': str(head),  # First 5 rows of the dataframe as a dictionary
         'describe':str(describe),  # Descriptive statistics of all columns
         'info': str(info),  # DataFrame info as a string
@@ -191,7 +224,39 @@ def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
 
     }
 
-    crew1.kickoff(inputs=data_config) 
+    try:
+        # Count input tokens
+        assert isinstance(plan.description, str), "Plan description must be a string!"
+        input_tokens = count_tokens(plan.description.format(**data_config))
+        
+        # Kickoff the crew
+        assert all(isinstance(value, str) for value in data_config.values()), "All values in data_config must be strings!"
+        result = crew1.kickoff(inputs=data_config)
+        
+        # Count output tokens
+        output_tokens = count_tokens(str(result))
+        
+        # Calculate the cost
+        total_cost = calculate_cost(input_tokens, output_tokens)
+        
+        # Print the cost
+        logger.info(f"Input tokens: {input_tokens} to {user_folder}")
+        logger.info(f"Output tokens: {output_tokens} to {user_folder}")
+        logger.info(f"Total cost: ${total_cost:.4f} to {user_folder}")
+        #print(f"Input tokens: {input_tokens}")
+        #print(f"Output tokens: {output_tokens}")
+        #print(f"Total cost: ${total_cost:.4f}")
+    
+    except Exception as e:
+        import traceback
+        logger.error(f"Error during crew execution: {e}")
+        #print(f"Error during crew execution: {e}")
+        traceback.print_exc()
 
-    code_executing_solution.extract_and_execute_code("Summary.txt", user_folder)
+    try:
+        code_executing_solution.extract_and_execute_code(f"FastApi/src/uploads/{user_folder}/Summary.txt", user_folder)
+    except Exception as e:
+        logger.error(f"Error during AI code run: {e}")
+        #print(f"Error during AI code run: {e}")
+        return "Error during AI code run"
     return "Everything is ok"
