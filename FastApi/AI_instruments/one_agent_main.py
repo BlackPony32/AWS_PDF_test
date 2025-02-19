@@ -104,6 +104,7 @@ def AI_generation_plots_summary(_data_dict, user_folder, page_numb):
                         Coding Standards
 
                         -Only use columns that exist in the dataframe, checking existence with conditionals.
+                        -Try to use state or zip code data to make map charts.
                         -Ensure all functions handle errors using try-except.
                         -Avoid using global variables and written functions for loading datasets.
                         -Optimize visualizations for high-quality output and readability.

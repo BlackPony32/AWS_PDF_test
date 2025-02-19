@@ -186,7 +186,7 @@ async def upload_file(
         
         try:
             final_sum_folder = f"FastApi/src/uploads/{user_folder}/final_gen.txt"
-            await asyncio.to_thread(final_gen, f"FastApi/src/uploads/{user_folder}/{filename}", final_sum_folder, q4)
+            await asyncio.to_thread(final_gen, f"FastApi/src/uploads/{user_folder}/cleaned_data.csv", final_sum_folder, q4)
             logger.info("Data final summary generated")
         except Exception as e:
             logger.error(f"Data final summary generation error: {e}")

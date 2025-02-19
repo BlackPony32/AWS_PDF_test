@@ -35,8 +35,8 @@ def find_col_to_drop(file_path):
     Analyze this report
     Write columns that would be great to drop.
     It should follow some rules:
-    1) Data in the column and column name should be useless for data visualization.
-    2) Keep in mind that the choice should be deliberate (if the columns are similar in meaning, leave the more understandable for the business).
+    1) Data in the column should be useless for data visualization.
+    2) Keep in mind that the choice should be deliberate (if the columns data are similar in meaning, leave the more understandable for the business).
     3) All this is done to create the most valuable visualizations.
     4) The final answer should contain a list of columns.
     5) Do NOT drop State or Zip if they exist.
@@ -67,20 +67,13 @@ def find_col_to_drop(file_path):
             verbose=True,
             allow_dangerous_code=True
         )
-        
-        # Count input tokens
+
         input_tokens = count_tokens(prompt)
-        
-        # Invoke the agent
+
         result = agent_executor.invoke({"input": prompt})
-        
-        # Extract the output
+
         output = result.get("output", "")
-        
-        # Count output tokens
         output_tokens = count_tokens(output)
-        
-        # Calculate the cost
         total_cost = calculate_cost(input_tokens, output_tokens)
         
         # Print the cost
